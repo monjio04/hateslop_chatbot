@@ -27,9 +27,9 @@ TIPS)
 
 - 유료) 바이브코딩 툴을 이용한다면 그를 활용하세요.
 - 무료) repomix 를 이용해 코드베이스 전체를 google ai studio 에 넣어서 정확한 내용 기반으로 LLM 과 분석하세요. (Google AI Studio 를 쓰는 이유는 처리할 수 있는 Token 수가 1M으로 타 서비스 대비 압도적으로 많고 무료이기 때문)
-  [repomix 활용방법](https://hateslop.notion.site/AgentOps-285219be4e0b8068974cc572a53bf20a)
-  [gitingest : GitHub 저장소를 LLM 친화적인 텍스트로 변환하는 도구](https://discuss.pytorch.kr/t/gitingest-github-llm/6896)
-  [deepwiki : Github 기반 프로젝트 분석방법](https://deepwiki.org/)
+[repomix 활용방법](https://hateslop.notion.site/AgentOps-285219be4e0b8068974cc572a53bf20a)
+[gitingest : GitHub 저장소를 LLM 친화적인 텍스트로 변환하는 도구](https://discuss.pytorch.kr/t/gitingest-github-llm/6896)
+[deepwiki : Github 기반 프로젝트 분석방법](https://deepwiki.org/)
 
 [License: MIT](https://opensource.org/licenses/MIT)
 [Python](https://www.python.org/)
@@ -79,15 +79,15 @@ python app.py
 
 정상 작동 화면
 
-메인 페이지
+### 메인 페이지
 
 메인 페이지
 
-상세 페이지
+### 상세 페이지
 
 상세 페이지
 
-채팅 페이지
+### 채팅 페이지
 
 채팅 페이지
 
@@ -203,7 +203,7 @@ JS-파이썬 매핑:
 - `services/chatbot_service.py`: AI 로직 구현 (RAG, Embedding, LLM)
 - `config/chatbot_config.json`: 챗봇 설정 (이름, 성격, 시스템 프롬프트)
 - `static/data//`*: 텍스트 데이터 (json, markdown, txt 자유롭게 사용하시면 됩니다.)
-- `static/images//*`: 챗봇 관련 이미지
+- `static/images//`*: 챗봇 관련 이미지
 
 ## 📚 학습 자료
 
