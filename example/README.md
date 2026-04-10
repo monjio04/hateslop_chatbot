@@ -21,7 +21,7 @@
 | 1조 | [ghdrua1/3-character-chat](https://github.com/ghdrua1/3-character-chat.git) |
 | 2조 | [yunjin-Kim4809/3-character-chat-new](https://github.com/yunjin-Kim4809/3-character-chat-new.git) |
 | 3조 | [dhleesep9/chatbot-project](https://github.com/dhleesep9/chatbot-project.git) |
-| 4조 | [eoeldroal/HomeRunBall-Chat](https://github.com/eoeldroal/HomeRunBall-Chat.git) |
+| 4조 | [hwi0201/HomeRunBall-Chat](https://github.com/hwi0201/HomeRunBall-Chat) |
 | 5조 | [softee220/3-character-chat](https://github.com/softee220/3-character-chat.git) |
 
 클론 예시:
