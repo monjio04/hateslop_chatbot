@@ -36,7 +36,12 @@ class ChatbotService:
 
     def _load_config(self) -> dict:
         config_path = BASE_DIR / "config" / "chatbot_config.json"
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+
+    def _load_chapter_data(self, chapter_id: str) -> dict:
+        path = BASE_DIR / "static" / "data" / "chatbot" / f"{chapter_id}.json"
+        with open(path, "r", encoding="utf-8-sig") as f:
             return json.load(f)
 
     def _load_ch_data(self, filename: str) -> dict:
@@ -56,7 +61,7 @@ class ChatbotService:
         """config/characters/*.json 을 모두 읽어서 id 키로 반환"""
         characters = {}
         for char_file in CHARACTERS_DIR.glob("*.json"):
-            with open(char_file, "r", encoding="utf-8") as f:
+            with open(char_file, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
                 characters[data["id"]] = data
         return characters
@@ -222,9 +227,190 @@ class ChatbotService:
                      "소스": ch1["sauce"], "재료": ch1["ingredients"]}))
                 return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": None}
 
+
     def _ch2_handler(self, state: dict, user_message: str) -> dict:
-        # TODO: CH2 연애설득 미니게임 (브라 오드)
-        return {"reply": "[CH2] 아직 구현 전이야.", "image": None}
+        data = state["data"]
+
+        if "ch2_phase" not in data:
+            data.update({"ch2_phase": "intro", "current_q": 0, "current_turn": 0, "score": 0})
+
+        bro = self.characters["bro"]
+        ch2 = self._load_chapter_data("ch2")
+
+        if data["ch2_phase"] == "intro":
+            data["ch2_phase"] = "question"
+            first_q = ch2["questions"][0]["text"]
+            return {
+                "reply": f"{ch2['intro']}\n\n🎯 {ch2['quest']}\n\n{first_q}",
+                "image": None,
+            }
+
+        q_idx = data["current_q"]
+        question = ch2["questions"][q_idx]
+        max_turns = ch2["max_turns_per_question"]
+
+        elements_found = self._ch2_check_elements(bro, ch2, question, user_message)
+        threshold = ch2["judgment_criteria"]["success_threshold"]
+        convinced = (len(elements_found) >= threshold)
+
+        data["current_turn"] += 1
+        last_turn = (data["current_turn"] >= max_turns)
+
+        if convinced:
+            data["score"] += 1
+            reply = random.choice(ch2["reactions"]["convinced"])
+        elif last_turn:
+            reply = random.choice(ch2["reactions"]["failure"])
+        else:
+            reply = self._ch2_generate_nudge(bro, ch2, elements_found, user_message)
+
+        if convinced or last_turn:
+            data["current_q"] += 1
+            data["current_turn"] = 0
+
+            if data["current_q"] >= len(ch2["questions"]):
+                return self._ch2_ending(state, ch2, reply)
+
+            next_q = ch2["questions"][data["current_q"]]["text"]
+            return {"reply": f"{reply}\n\n{next_q}", "image": None}
+
+        return {"reply": reply, "image": None}
+
+    def _ch2_check_elements(self, bro: dict, ch2: dict, question: dict, user_message: str) -> list:
+        elements = ch2["elements"]
+        criteria = ch2["judgment_criteria"]
+        bro_rules_str = "\n".join(f"- {r}" for r in ch2["bro_rules"])
+        failure_str = "\n".join(f"- {f}" for f in criteria["failure_types"])
+
+        elements_desc = "\n".join(
+            f"요소 {e['id']} - {e['name']}: {e['description']}"
+            for e in elements
+        )
+
+        example_str = ""
+        if question.get("example_rebuttals"):
+            examples = "\n".join(f"- {r}" for r in question["example_rebuttals"])
+            example_str = f"""
+    ### 이 질문에 대한 좋은 답변 예시 (요소 충족 기준 참고용)
+    {examples}
+    - 위 예시처럼 비유나 자기 경험을 활용한 답변도 요소를 충족한 것으로 인정한다.
+    - 직접적 표현이 아니어도 의미상 요소를 충족하면 인정한다.
+    """
+
+        system_prompt = f"""### 너의 프로필
+    이름: {bro['name']}
+    역할: {bro['role']}
+    성격: {bro['personality']}
+    말투: {bro['speech_style']}
+
+    ### 현재 상황
+    브로가 누나에게 한 질문: "{question['text']}"
+    누나가 브로를 설득하려는 중이다.
+
+    ### 너의 태도 - 절대 규칙
+    - 너는 자신의 생각이 맞다고 굳게 믿는다. 쉽게 설득되지 않는다.
+    - 반말을 사용한다.
+    {bro_rules_str}
+
+    ### 설득 요소 정의
+    {elements_desc}
+    {example_str}
+    ### 즉시 실패 유형 (해당 시 elements_found는 무조건 빈 배열)
+    {failure_str}
+
+    ### 판단 기준
+    "확신이 없으면 빈 배열을 반환하라. 관대하게 판정하지 마라.
+
+    ### 지시
+    누나의 답변에서 위 3가지 요소 중 충족된 것의 ID를 배열로 반환하라.
+    즉시 실패 유형에 해당하면 빈 배열을 반환하라.
+    반드시 아래 JSON 형식으로만 응답하라 (다른 텍스트 금지):
+    {{"elements_found": [충족된 요소 ID 배열, 예: [1, 2] 또는 []]}}"""
+
+        raw = self._call_llm(
+            [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}],
+            temperature=0.3,
+        )
+
+        try:
+            result = json.loads(raw)
+            found = [e for e in result.get("elements_found", []) if e in (1, 2, 3)]
+            return found
+        except (json.JSONDecodeError, KeyError):
+            return []
+
+    def _ch2_generate_nudge(self, bro: dict, ch2: dict, elements_found: list, user_message: str) -> str:
+        all_ids = {e["id"] for e in ch2["elements"]}
+        missing = sorted(all_ids - set(elements_found))
+
+        if not missing:
+            return random.choice(ch2["reactions"]["failure"])
+
+        found_names = [e["name"] for e in ch2["elements"] if e["id"] in elements_found]
+
+        if found_names:
+            found_text = (
+                f"누나가 '{', '.join(found_names)}' 부분은 좀 찔리는 말을 했어. "
+                f"속으로는 인정하지만 절대 티는 안 낼 거야."
+            )
+        else:
+            found_text = "누나 말이 별로 안 와닿아. 딴 걸 물어보면서 넘기면 돼."
+
+        target_id = random.choice(missing)
+        target = next(e for e in ch2["elements"] if e["id"] == target_id)
+        forbidden = "\n".join(f"- \"{n}\" 또는 이와 유사한 표현" for n in target["nudges"])
+
+        system_prompt = f"""### 너의 프로필
+    이름: {bro['name']}
+    역할: {bro['role']}
+    성격: {bro['personality']}
+    말투: {bro['speech_style']}
+
+    ### 지금 상황
+    누나가 방금 이렇게 말했어: "{user_message}"
+
+    ### 내 속마음
+    {found_text}
+    아직 '{target['name']}'({target['description']})에 대한 답을 못 들어서 그게 걸려.
+
+
+    ### 반응 지시
+    1. 유저의 말 중 한 단어를 집어 비웃거나 반박해.
+        예) 누나가 "소름끼치지 않냐"고 했으면 → "소름은 무슨..."처럼 그 단어에 반응.
+        예) 누나가 "경비아저씨"를 들었으면 → "아니 경비아저씨가 거기서 왜 나와"처럼 황당해해.
+    2. 하지만 이미 유저가 상황 설명을 했다면(found_text 참고), 그 이야기는 그만하고 뻔뻔하게 다음 의문('{target['name']}')을 던져.
+    3. 예: "아니, 알바생 웃는 건 알겠는데, 내 상황은 다르다니까? (1번 반박) 근데 그 누나가 나한테만 유독 친절한 건 어떻게 설명할 건데? (2번 입장 고려 유도)"
+    4. 1~4문장 이내로 이야기해. 
+
+
+    ### 절대 금지 표현 (이 말들은 쓰지 마)
+    {forbidden}
+    - "구체적으로", "예를 들어서", "무슨 상황인데" 계열 표현 전부 금지
+    - "...아니야?" 처럼 문장 끝에 붙이는 습관적 표현 금지"""
+
+        reply = self._call_llm(
+            [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message}
+            ],
+            temperature=0.9,
+        )
+        return reply.strip()
+
+    def _ch2_ending(self, state: dict, ch2: dict, last_reply: str) -> dict:
+        score = state["data"]["score"]
+        ending = ch2["endings"].get(str(score), ch2["endings"]["0"])
+
+        if ending.get("next_chapter"):
+            state["chapter"] = 3
+            state["data"] = {}
+        else:
+            state["game_over"] = True
+
+        return {
+            "reply": f"{last_reply}\n\n{ending['text']}",
+            "image": ending.get("image"),
+        }
 
     def _ch3_handler(self, state: dict, user_message: str) -> dict:
         d = self.ch3_data
@@ -408,7 +594,7 @@ def get_chatbot_service():
 # 로컬 테스트
 
 if __name__ == "__main__":
-    service = get_chatbot_service()
+    service.generate_response("init", "테스터")
     username = "테스터"
 
     print("테스트할 챕터를 선택하세요: 1(엄마) / 3(아빠)")
@@ -440,3 +626,17 @@ if __name__ == "__main__":
             print(f"  선택지: {res['choices']}")
         if res.get("step") in ("clear", "fail"):
             break
+
+    # CH2 직접 진입
+    state = service._get_state("테스터")
+    state["chapter"] = 2
+
+    while True:
+        msg = input("\nYou: ")
+        if msg == "q":
+            break
+        result = service.generate_response(msg, "테스터")
+        print(f"\nBot: {result['reply']}")
+        if result.get("image"):
+            print(f"[이미지: {result['image']}]")
+    
