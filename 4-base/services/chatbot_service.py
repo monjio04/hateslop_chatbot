@@ -11,27 +11,6 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 CHARACTERS_DIR = BASE_DIR / "config" / "characters"
 
-CH1_MEATS    = ["소고기", "돼지고기", "닭고기"]
-CH1_HEATS    = ["약불로 천천히 굽기", "중불로 적당히 굽기", "강불로 빠르게 굽기"]
-CH1_SAUCES   = ["케첩", "머스타드", "바베큐소스", "고추장", "간장", "꿀", "와사비", "초코소스", "딸기잼"]
-CH1_TOPPINGS = ["양상추", "토마토", "양파", "피클", "할라피뇨", "아보카도", "깻잎", "김치", "파인애플", "젤리"]
-CH1_SUCCESS  = {
-    "meat": "돼지고기",
-    "heat": "중불로 적당히 굽기",
-    "sauce": "바베큐소스",
-    "ingredients": {"양상추", "피클", "양파"}
-}
-
-CH3_MEDS = {
-    "나이":   ["아재약", "영포티약", "오지콤약", "동안약"],
-    "얼굴":   ["흉악범상약", "큐티상약", "부처님상약", "아랍상약"],
-    "몸매":   ["배툭튀약", "멸치약", "모델약", "근육빵빵약"],
-    "스타일": ["나시룩약", "산악회룩약", "스트릿룩약", "댄디룩약"],
-}
-CH3_ORDER   = ["나이", "얼굴", "몸매", "스타일"]
-CH3_SUCCESS = {"나이": "오지콤약", "얼굴": "큐티상약", "몸매": "배툭튀약", "스타일": "댄디룩약"}
-CH3_TOTAL   = 100
-
 
 class ChatbotService:
 
@@ -45,9 +24,10 @@ class ChatbotService:
 
         self.config = self._load_config()
         self.characters = self._load_characters()
+        self.ch1_data = self._load_ch_data("ch1_data.json")
+        self.ch3_data = self._load_ch_data("ch3_data.json")
         self.ch3_results = self._load_ch3_results()
 
-        # 유저별 게임 상태 저장소 (session_id → state)
         self.sessions = {}
 
         print("[ChatbotService] 초기화 완료")
@@ -57,6 +37,11 @@ class ChatbotService:
     def _load_config(self) -> dict:
         config_path = BASE_DIR / "config" / "chatbot_config.json"
         with open(config_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
+    def _load_ch_data(self, filename: str) -> dict:
+        path = BASE_DIR / "static" / "data" / "chatbot" / filename
+        with open(path, "r", encoding="utf-8") as f:
             return json.load(f)
 
     def _load_ch3_results(self) -> dict:
@@ -81,11 +66,11 @@ class ChatbotService:
     def _get_state(self, session_id: str) -> dict:
         if session_id not in self.sessions:
             self.sessions[session_id] = {
-                "chapter": 1,       # 현재 챕터 (1~3)
-                "turn": 0,          # 현재 챕터 내 턴 수
-                "cleared": [],      # 클리어한 챕터 id 목록
+                "chapter": 1,
+                "turn": 0,
+                "cleared": [],
                 "game_over": False,
-                "data": {}          # 챕터별 임시 데이터 (선택지 누적 등)
+                "data": {}
             }
         return self.sessions[session_id]
 
@@ -96,10 +81,6 @@ class ChatbotService:
 
     def _build_prompt(self, character_id: str, user_message: str,
                       game_context: dict = None) -> list:
-        """
-        OpenAI messages 배열 구성.
-        나중에 RAG를 추가할 때는 game_context에 검색 결과를 넣으면 됩니다.
-        """
         char = self.characters.get(character_id, {})
 
         system_content = (
@@ -133,6 +114,15 @@ class ChatbotService:
     # ------------------------------------------------------------------ chapters
 
     def _ch1_handler(self, state: dict, user_message: str) -> dict:
+        d = self.ch1_data
+        CH1_MEATS    = d["meats"]
+        CH1_HEATS    = d["heats"]
+        CH1_SAUCES   = d["sauces"]
+        CH1_TOPPINGS = d["toppings"]
+        CH1_SUCCESS  = {**d["success"], "ingredients": set(d["success"]["ingredients"])}
+        dlg = d["dialogues"]
+        llm = d["llm_prompts"]
+
         ch1 = state["data"].setdefault("ch1", {
             "step": 0, "meat": None, "heat": None,
             "sauce": None, "ingredients": []
@@ -141,35 +131,32 @@ class ChatbotService:
 
         # Step 0: 인트로 — 트리거 문구 대기
         if step == 0:
-            if not user_message:  # init 직후 첫 호출
+            if not user_message:
                 return {
-                    "reply": (
-                        "내일 너 친구 온다며? 엄마가 맛있는 햄버거 해줄게~\n\n"
-                        "준비되었다면 \"엄마 내가 요리 도와줄게\"라고 적어보렴!"
-                    ),
+                    "reply": dlg["intro"],
                     "step": 0, "choices": [], "multi_select": False, "max_select": 1, "image": None,
                 }
             if "도와줄게" in user_message or "도와 줄게" in user_message:
                 ch1["step"] = 1
                 return {
-                    "reply": "그래? 착하구나~ 고기 종류 하나 선택해줄래?",
+                    "reply": dlg["step1_prompt"],
                     "step": 1, "choices": CH1_MEATS,
                     "multi_select": False, "max_select": 1, "image": None,
                 }
             return {
-                "reply": "준비되었다면 \"엄마 내가 요리 도와줄게\"라고 적어보렴!",
+                "reply": dlg["trigger_wait"],
                 "step": 0, "choices": [], "multi_select": False, "max_select": 1, "image": None,
             }
 
         # Step 1: 고기 선택
         if step == 1:
             if user_message not in CH1_MEATS:
-                return {"reply": "고기 목록에서 하나만 골라, 알지?", "step": 1,
+                return {"reply": dlg["step1_error"], "step": 1,
                     "choices": CH1_MEATS, "multi_select": False, "max_select": 1, "image": None}
             ch1["meat"] = user_message
             ch1["step"] = 2
             return {
-                "reply": "고기는 역시 센불로 구워야 하지 않을까?",
+                "reply": dlg["step2_prompt"],
                 "step": 2, "choices": CH1_HEATS,
                 "multi_select": False, "max_select": 1, "image": None,
             }
@@ -177,12 +164,12 @@ class ChatbotService:
         # Step 2: 굽기 선택
         if step == 2:
             if user_message not in CH1_HEATS:
-                return {"reply": "제대로 골라!", "step": 2,
+                return {"reply": dlg["step2_error"], "step": 2,
                     "choices": CH1_HEATS, "multi_select": False, "max_select": 1, "image": None}
             ch1["heat"] = user_message
             ch1["step"] = 3
             return {
-                "reply": "엄마의 비법 소스로 만들어볼까? 이 중에 더 넣고 싶은 거 있니?",
+                "reply": dlg["step3_prompt"],
                 "step": 3, "choices": CH1_SAUCES,
                 "multi_select": False, "max_select": 1, "image": None,
             }
@@ -190,12 +177,12 @@ class ChatbotService:
         # Step 3: 소스 선택
         if step == 3:
             if user_message not in CH1_SAUCES:
-                return {"reply": "소스 목록에서 골라!", "step": 3,
+                return {"reply": dlg["step3_error"], "step": 3,
                     "choices": CH1_SAUCES, "multi_select": False, "max_select": 1, "image": None}
             ch1["sauce"] = user_message
             ch1["step"] = 4
             return {
-                "reply": "혹시 친구가 가리는 게 있으면 어쩌니..? 네가 친구 입맛 아니깐 재료 좀 선택해줄래?",
+                "reply": dlg["step4_prompt"],
                 "step": 4, "choices": CH1_TOPPINGS,
                 "multi_select": True, "max_select": 3, "image": None,
             }
@@ -205,12 +192,12 @@ class ChatbotService:
             selected = [x for x in re.split(r"[,\s]+", user_message.strip()) if x]
             valid = [x for x in selected if x in CH1_TOPPINGS]
             if len(valid) != 3:
-                return {"reply": "재료 3개만 골라, 알지?", "step": 4,
+                return {"reply": dlg["step4_error"], "step": 4,
                     "choices": CH1_TOPPINGS, "multi_select": True, "max_select": 3, "image": None}
             ch1["ingredients"] = valid
             ch1["step"] = 5
             return {
-                "reply": "그럼 너네 아빠랑 동생 불러서 먹여보자꾸나~",
+                "reply": dlg["step5_prompt"],
                 "step": 5, "choices": ["시식하기"],
                 "multi_select": False, "max_select": 1, "image": None,
             }
@@ -226,23 +213,31 @@ class ChatbotService:
             if is_success:
                 state["cleared"].append(1)
                 state["chapter"] = 2
-                reply = self._call_llm(self._build_prompt("mama",
-                    "햄버거가 완벽하게 완성됐어. 기쁘지만 절대 내색 안 하는 마마 오드의 짧은 성공 대사를 해줘."))
+                reply = self._call_llm(self._build_prompt("mama", llm["success"]))
                 return {"reply": reply, "step": "clear", "choices": [], "image": None}
             else:
                 state["game_over"] = True
-                reply = self._call_llm(self._build_prompt("mama",
-                    "이상한 햄버거를 먹은 아빠와 동생이 배탈났어. 마마 오드가 자기 요리는 문제없다며 우기는 짧은 대사를 해줘.",
+                reply = self._call_llm(self._build_prompt("mama", llm["fail"],
                     {"고기": ch1["meat"], "굽기": ch1["heat"],
                      "소스": ch1["sauce"], "재료": ch1["ingredients"]}))
-                return {"reply": reply, "step": "fail",
-                    "choices": ["다시하기"], "image": None}
+                return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": None}
 
     def _ch2_handler(self, state: dict, user_message: str) -> dict:
         # TODO: CH2 연애설득 미니게임 (브라 오드)
         return {"reply": "[CH2] 아직 구현 전이야.", "image": None}
 
     def _ch3_handler(self, state: dict, user_message: str) -> dict:
+        d = self.ch3_data
+        CH3_MEDS     = d["meds"]
+        CH3_ORDER    = d["order"]
+        CH3_SUCCESS  = d["success"]
+        CH3_TOTAL    = d["total_ml"]
+        MOUSE_SOUNDS = d["mouse_sounds"]
+        ANGRY_MSGS   = d["angry_msgs"]
+        WRONG_MSGS   = d["wrong_msgs"]
+        dlg = d["dialogues"]
+        llm = d["llm_prompts"]
+
         ch3 = state["data"].setdefault("ch3", {
             "step": 0,
             "나이": None, "나이_ml": 0,
@@ -252,41 +247,6 @@ class ChatbotService:
         })
         step = ch3["step"]
         ML_BY_POS = [10, 20, 30, 40]
-
-        MOUSE_SOUNDS = {
-            "나이":   "찍찍찍 찍찍.. 찍!",
-            "얼굴":   "찍 찍찍찍.. 찍",
-            "몸매":   "찍찍찍찍 찍찍찍",
-            "스타일": "찍찍! 찍.. 찍찍",
-        }
-        ANGRY_MSGS = {
-            "나이":   "야이!! 나이 약부터 빨리 골라!! 꾸물대지 말고!",
-            "얼굴":   "얼굴은 뭐로 할 거야?! 빨리 정하라고!!",
-            "몸매":   "신체 약 어서 골라!! 시간 없다고!!",
-            "스타일": "스타일까지 골라야 끝난다고!! 빨리빨리!!",
-        }
-        WRONG_MSGS = {
-            "나이": [
-                "야이!! 그게 나이 약이야?! 목록 좀 제대로 봐!!",
-                "눈 뜨고 다시 봐!! 나이 약 목록에서 골라야지!!",
-                "이 답답한 녀석!! 나이 약을 제대로 고르란 말이야!!",
-            ],
-            "얼굴": [
-                "얼굴 약도 제대로 못 고르냐?! 다시 골라!!",
-                "목록에 없는 걸 왜 골라!! 얼굴 약 다시!!",
-                "시간 없다고!! 얼굴 약 빨리 제대로 된 걸 골라!!",
-            ],
-            "몸매": [
-                "신체 약을 그것도 못 골라?! 다시 봐!!",
-                "시간 없다고!! 신체 약 목록에서 제대로 골라!!",
-                "이 멍청한 녀석!! 신체 약 다시!!",
-            ],
-            "스타일": [
-                "마지막에서 틀리냐?! 스타일 약 다시 골라!!",
-                "거의 다 왔잖아!! 목록에서 제대로 골라!!",
-                "빨리!! 스타일 약 제대로 된 걸로 골라!!",
-            ],
-        }
 
         def used_ml():
             return sum(ch3[f"{c}_ml"] for c in CH3_ORDER)
@@ -306,17 +266,10 @@ class ChatbotService:
         if step == 0:
             ch3["step"] = 1
             return {
-                "reply": (
-                    "\"내 발명… 드디어 완성되었… 찍찍…\"\n\n"
-                    "그 순간, 아빠는 눈앞에서 새끼 쥐로 변해버렸다.\n\n"
-                    "[Quest 3] 아빠를 원래 모습으로 되돌리세요.\n\n"
-                    "당신의 주변에는 네 가지 종류의 약병이 놓여 있습니다.\n"
-                    "각 병에는 '나이', '얼굴', '신체', '스타일'이라고 적혀 있습니다.\n"
-                    "표를 참고해 총 100ml의 해독약을 조합한 뒤, 쥐가 된 아빠에게 먹이세요.\n\n"
-                    + prompt_for("나이", 100)
-                ),
+                "reply": dlg["intro"] + prompt_for("나이", 100),
                 "step": 1, "choices": CH3_MEDS["나이"],
                 "multi_select": False, "max_select": 1, "image": None,
+                "sound": "mouse_origin",
             }
 
         # Steps 1~4: 각 카테고리 약 선택 (ml 자동 결정)
@@ -330,6 +283,7 @@ class ChatbotService:
                     "reply": prompt_for(category, CH3_TOTAL - used_ml(), msg=wrong_msg),
                     "step": step, "choices": CH3_MEDS[category],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "sound": "mouse_mad",
                 }
 
             ml = ML_BY_POS[CH3_MEDS[category].index(user_message)]
@@ -340,9 +294,10 @@ class ChatbotService:
 
             if step == 4:  # 스타일까지 완료 → 먹이기
                 return {
-                    "reply": f"총 {used_ml()}ml 완성!\n아빠(쥐)에게 먹여볼까?",
+                    "reply": dlg["complete"].format(total=used_ml()),
                     "step": 5, "choices": ["먹이기"],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "sound": None,
                 }
             else:
                 next_cat = CH3_ORDER[step]
@@ -350,6 +305,7 @@ class ChatbotService:
                     "reply": prompt_for(next_cat, remaining),
                     "step": step + 1, "choices": CH3_MEDS[next_cat],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "sound": "mouse_origin",
                 }
 
         # Step 5: 먹이기 → 용량 체크 → 성공/실패 판정
@@ -366,12 +322,10 @@ class ChatbotService:
                     "스타일": None, "스타일_ml": 0,
                 }
                 return {
-                    "reply": (
-                        f"용량이 맞지 않습니다. (현재 {total}ml) 다시 선택해주세요.\n\n"
-                        + prompt_for("나이", 100)
-                    ),
+                    "reply": dlg["ml_mismatch"].format(total=total) + prompt_for("나이", 100),
                     "step": 1, "choices": CH3_MEDS["나이"],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "sound": "mouse_mad",
                 }
 
             combo_key = "_".join(ch3[cat] for cat in CH3_ORDER)
@@ -381,18 +335,16 @@ class ChatbotService:
             if correct:
                 state["cleared"].append(3)
                 state["chapter"] = 4
-                reply = self._call_llm(self._build_prompt("papa",
-                    "해독약을 마시고 원래 모습으로 돌아온 파파 오드의 짧은 성공 대사를 해줘."))
-                return {"reply": reply, "step": "clear", "choices": [], "image": result_image}
+                reply = self._call_llm(self._build_prompt("papa", llm["success"]))
+                return {"reply": reply, "step": "clear", "choices": [], "image": result_image, "sound": None}
             else:
                 state["game_over"] = True
                 desc = ", ".join(
                     f"{c}:{ch3[c]}({ch3[f'{c}_ml']}ml)" for c in CH3_ORDER
                 )
-                reply = self._call_llm(self._build_prompt("papa",
-                    "해독약 조합이 틀려서 이상하게 변한 파파 오드의 짧고 황당한 실패 대사를 해줘.",
+                reply = self._call_llm(self._build_prompt("papa", llm["fail"],
                     {"변한_모습": desc}))
-                return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": result_image}
+                return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": result_image, "sound": None}
 
     # ------------------------------------------------------------------ public
 
