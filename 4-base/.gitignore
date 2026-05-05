@@ -14,7 +14,7 @@ dist/
 build/
 venv/
 env/
-myvenv/
+
 
 # 크로마DB 관련 캐시/폴더
 *chroma_db*
