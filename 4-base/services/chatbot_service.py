@@ -244,7 +244,7 @@ class ChatbotService:
                 except Exception as e:
                     print(f"[WARN] LLM 실패, fallback 사용: {e}")
                     reply = "이상한 걸 넣은 것 같은데... 내 잘못이 아니야!"
-                return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": None}
+                return {"reply": reply, "step": "fail", "fail_id": "CH1_FAIL", "choices": ["다시하기"], "image": None}
 
 
     def _ch2_handler(self, state: dict, user_message: str) -> dict:
@@ -434,13 +434,22 @@ class ChatbotService:
         if ending.get("next_chapter"):
             state["chapter"] = 3
             state["data"] = {}
+            return {
+                "reply": f"{last_reply}\n\n{ending['text']}",
+                "image": ending.get("image"),
+                "step": "clear"
+            }
         else:
             state["game_over"] = True
-
-        return {
-            "reply": f"{last_reply}\n\n{ending['text']}",
-            "image": ending.get("image"),
-        }
+            # Mapping scores to fail_ids based on bad_ending.json
+            # Score 2 is Rose (CH2_FAIL_2), Score 1/0 is Candle (CH2_FAIL_1)
+            fail_id = "CH2_FAIL_2" if score == 2 else "CH2_FAIL_1"
+            return {
+                "reply": f"{last_reply}\n\n{ending['text']}",
+                "image": ending.get("image"),
+                "step": "fail",
+                "fail_id": fail_id
+            }
 
     def _ch3_handler(self, state: dict, user_message: str) -> dict:
         d = self.ch3_data
@@ -560,7 +569,7 @@ class ChatbotService:
                 )
                 reply = self._call_llm(self._build_prompt("papa", llm["fail"],
                     {"변한_모습": desc}))
-                return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": result_image, "sound": None}
+                return {"reply": reply, "step": "fail", "fail_id": f"CH3_{combo_key}", "choices": ["다시하기"], "image": result_image, "sound": None}
 
     # ------------------------------------------------------------------ public
 

@@ -128,6 +128,25 @@ def api_chat():
         print(f"[ERROR] 응답 생성 실패: {e}")
         return jsonify({'reply': '죄송해요, 일시적인 오류가 발생했어요. 다시 시도해주세요.'}), 500
 
+# 실패 페이지
+@app.route('/fail')
+def fail():
+    fail_id = request.args.get('id', 'DEFAULT')
+
+    if fail_id.startswith('CH3_'):
+        combo_key = fail_id[4:]
+        ch3_path = BASE_DIR / 'static' / 'data' / 'chatbot' / 'ch3_results.json'
+        with open(ch3_path, 'r', encoding='utf-8-sig') as f:
+            ch3_data = json.load(f)
+        entry = ch3_data.get(combo_key, {"text": "실패...", "image": None})
+        return render_template('fail.html', desc=entry.get('text'), image=entry.get('image'))
+
+    bad_path = BASE_DIR / 'static' / 'data' / 'chatbot' / 'bad_ending.json'
+    with open(bad_path, 'r', encoding='utf-8-sig') as f:
+        bad_data = json.load(f)
+    entry = bad_data.get(fail_id, bad_data.get('DEFAULT', {}))
+    return render_template('fail.html', desc=entry.get('desc'), image=entry.get('image'))
+
 # 헬스체크 엔드포인트 (Vercel용)
 @app.route('/health')
 def health():

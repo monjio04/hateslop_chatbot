@@ -448,6 +448,13 @@ async function sendMessage(isInitial = false) {
       }
     }
 
+    // ── Fail redirect
+    if (data.step === "fail") {
+      setTimeout(() => {
+        window.location.href = `/fail?id=${data.fail_id || 'DEFAULT'}`;
+      }, 2000);
+    }
+
   } catch (err) {
     console.error("메시지 전송 에러:", err);
     removeMessage(loadingId);
