@@ -1,33 +1,33 @@
 console.log("챗봇 JS 로드 완료");
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const gameContainer  = document.querySelector(".game-container");
-const username       = gameContainer ? gameContainer.dataset.username : "사용자";
-const chatLog        = document.getElementById("chat-log");
+const gameContainer = document.querySelector(".game-container");
+const username = gameContainer ? gameContainer.dataset.username : "사용자";
+const chatLog = document.getElementById("chat-log");
 const userMessageInput = document.getElementById("user-message");
-const sendBtn        = document.getElementById("send-btn");
-const sceneImg       = document.getElementById("scene-img");
-const heartsBox      = document.getElementById("hearts-box");
-const questBanner    = document.getElementById("quest-banner");
+const sendBtn = document.getElementById("send-btn");
+const sceneImg = document.getElementById("scene-img");
+const heartsBox = document.getElementById("hearts-box");
+const questBanner = document.getElementById("quest-banner");
 
 // ── Chapter config ─────────────────────────────────────────────────────────
 const CHAPTER_UI = {
   1: {
-    name:        "Mama Odd",
-    scene:       "/static/images/chatbot/chat/rect18.png",
-    avatar:      "/static/images/chatbot/chat/mama_profile.png",
+    name: "Mama Odd",
+    scene: "/static/images/chatbot/chat/rect18.png",
+    avatar: "/static/images/chatbot/chat/mama_profile.png",
     bottomLabel: "/static/images/chatbot/chat/Recipe.png",
   },
   2: {
-    name:        "Bro Odd",
-    scene:       "/static/images/chatbot/chat/rect18.png",
-    avatar:      "/static/images/chatbot/chat/bro_profile.png",
+    name: "Bro Odd",
+    scene: "/static/images/chatbot/chat/rect18.png",
+    avatar: "/static/images/chatbot/chat/bro_profile.png",
     bottomLabel: "/static/images/chatbot/chat/Convinced.png",
   },
   3: {
-    name:        "Papa Odd",
-    scene:       "",
-    avatar:      "/static/images/chatbot/chat/papa_profile.png",
+    name: "Papa Odd",
+    scene: "",
+    avatar: "/static/images/chatbot/chat/papa_profile.png",
     bottomLabel: null,
   },
 };
@@ -119,7 +119,7 @@ function applyChapterUI(chapter) {
 // ── CH1 fixed image panel ──────────────────────────────────────────────────
 function updateCh1Image(imagePath) {
   const area = document.getElementById("ch1-image-area");
-  const img  = document.getElementById("ch1-img");
+  const img = document.getElementById("ch1-img");
 
   if (!area || !img) return;
 
@@ -235,8 +235,8 @@ function updateHearts(score) {
 }
 
 // ── Convinced label ────────────────────────────────────────────────────────
-function showConvinced() {}
-function hideConvinced() {}
+function showConvinced() { }
+function hideConvinced() { }
 
 function renderCh2Payload(resp) {
   const text = typeof resp.reply === "string"
@@ -269,9 +269,9 @@ async function fetchCh2Intro() {
 
   try {
     const res = await fetch("/api/chat", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
+      body: JSON.stringify({
         message: " ",
         username
       }),
@@ -298,7 +298,7 @@ async function fetchCh2Intro() {
 // ── Sound ──────────────────────────────────────────────────────────────────
 function playSound(name) {
   const audio = new Audio(`/static/sound/${name}.mp3`);
-  audio.play().catch(() => {});
+  audio.play().catch(() => { });
 }
 
 // ── Send message ───────────────────────────────────────────────────────────
@@ -320,9 +320,9 @@ async function sendMessage(isInitial = false) {
 
   try {
     const res = await fetch("/api/chat", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
+      body: JSON.stringify({
         message,
         username
       }),
