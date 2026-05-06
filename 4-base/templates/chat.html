@@ -49,6 +49,17 @@
           />
         </div>
 
+        <!-- Recipe Section (CH1) -->
+        <div class="recipe-section" id="recipe-section" style="display: none;">
+          <img class="recipe-label-img" src="/static/images/chatbot/chat/Recipe.png" alt="Recipe Label" />
+          <div class="recipe-box">
+            <img class="rect38-img" src="/static/images/chatbot/chat/rect38.png" alt="recipe bg" />
+            <div class="recipe-overlay">
+              <div class="recipe-steps" id="recipe-steps"><span id="recipe-step-1">고기</span> → <span id="recipe-step-2">굽기</span> → <span id="recipe-step-3">소스</span> → <span id="recipe-step-4">속재료</span></div>
+            </div>
+          </div>
+        </div>
+
         <!-- CH2: Convinced image -->
         <img class="convinced-img" id="convinced-label" src="/static/images/chatbot/chat/Convinced.png" alt="Convinced" style="display: none" onerror="this.style.display='none'" />
         <!-- CH2: Hearts image -->
@@ -63,8 +74,9 @@
 
         <div id="chat-log" class="chat-log"></div>
 
-        <div id="ch1-image-area" style="display:none; flex-shrink:0; margin-top: 26px; align-self: center;">
+        <div id="ch1-image-area" style="display:none; flex-shrink:0; margin-top: 26px; align-self: center; position: relative;">
           <img id="ch1-img" src="" alt="" style="max-height:180px; object-fit:contain; border-radius:8px;" onerror="this.parentElement.style.display='none'" />
+          <div id="ch1-quest-text" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: #2a0a24; font-size: 1.1rem; font-family: 'NanumSquareNeo', sans-serif; font-weight: 400; white-space: nowrap; pointer-events: none; display: none;"></div>
         </div>
 
         <div class="input-bar">

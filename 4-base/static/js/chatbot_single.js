@@ -18,18 +18,21 @@ const CHAPTER_UI = {
     scene: "/static/images/chatbot/chat/rect18.png",
     avatar: "/static/images/chatbot/chat/mama_profile.png",
     showHearts: false,
+    showRecipe: true,
   },
   2: {
     name: "Bro Odd",
     scene: "/static/images/chatbot/chat/bro_question1.png",
     avatar: "/static/images/chatbot/chat/bro_profile.png",
     showHearts: true,
+    showRecipe: false,
   },
   3: {
     name: "Papa Odd",
     scene: "",
     avatar: "/static/images/chatbot/chat/papa_profile.png",
     showHearts: false,
+    showRecipe: false,
   },
 };
 
@@ -58,18 +61,32 @@ function applyChapterUI(chapter) {
     questBanner.classList.remove("visible");
   }
 
+  const recipeSection = document.getElementById("recipe-section");
+  if (recipeSection) {
+    recipeSection.style.display = ui.showRecipe ? "block" : "none";
+  }
+
   if (chapter !== 1) {
     updateCh1Image(null);
   }
 }
 
 // ── CH1 fixed image panel ──────────────────────────────────────────────────
-function updateCh1Image(imagePath) {
+function updateCh1Image(imagePath, text) {
   const area = document.getElementById("ch1-image-area");
   const img = document.getElementById("ch1-img");
+  const textEl = document.getElementById("ch1-quest-text");
   if (!area || !img) return;
   if (imagePath) {
     img.src = imagePath;
+    if (textEl) {
+      if (text) {
+        textEl.textContent = text;
+        textEl.style.display = "block";
+      } else {
+        textEl.style.display = "none";
+      }
+    }
     area.style.display = "block";
     const cl = document.getElementById("chat-log");
     if (cl) {
@@ -83,12 +100,12 @@ function updateCh1Image(imagePath) {
 
 // ── CH1 image auto-detect ─────────────────────────────────────────────────
 const CH1_STATE_MAP = [
-  { keywords: ["준비되었다면", "요리 도와줄게"], leftImg: "mama_start", questImg: "mama_quest1", bubbleImg: null },
-  { keywords: ["고기 종류", "착하구나"], leftImg: "mama_meat_left", questImg: null, bubbleImg: "mama_meat" },
-  { keywords: ["센불로"], leftImg: "mama_fire_left", questImg: null, bubbleImg: "mama_fire" },
-  { keywords: ["비법 소스"], leftImg: "mama_sauce_left", questImg: null, bubbleImg: "mama_sauce" },
-  { keywords: ["가리는 게 있으면", "재료 좀 선택"], leftImg: "mama_vegetable_left", questImg: null, bubbleImg: "mama_vegetable" },
-  { keywords: ["아빠랑 동생 불러서", "먹여보자꾸나"], leftImg: "mama_last", questImg: null, bubbleImg: null },
+  { keywords: ["준비되었다면", "요리 도와줄게", "빵"], leftImg: "mama_start", questImg: "quest", questText: "Quest 1 : 엄마의 요리력을 키우세요", bubbleImg: null, stepIndex: 1 },
+  { keywords: ["고기 종류", "착하구나"], leftImg: "mama_meat_left", questImg: null, questText: null, bubbleImg: "mama_meat", stepIndex: 1 },
+  { keywords: ["센불로", "굽기", "구워"], leftImg: "mama_fire_left", questImg: null, questText: null, bubbleImg: "mama_fire", stepIndex: 2 },
+  { keywords: ["비법 소스", "소스"], leftImg: "mama_sauce_left", questImg: null, questText: null, bubbleImg: "mama_sauce", stepIndex: 3 },
+  { keywords: ["가리는 게 있으면", "재료 좀 선택", "속재료"], leftImg: "mama_vegetable_left", questImg: null, questText: null, bubbleImg: "mama_vegetable", stepIndex: 4 },
+  { keywords: ["아빠랑 동생 불러서", "먹여보자꾸나"], leftImg: "mama_last", questImg: "quest", questText: "Quest 1 성공!", bubbleImg: null, stepIndex: 0 },
 ];
 
 function getCh1Images(text) {
@@ -97,11 +114,13 @@ function getCh1Images(text) {
       return {
         leftImg: entry.leftImg ? `/static/images/chatbot/chat/${entry.leftImg}.png` : null,
         questImg: entry.questImg ? `/static/images/chatbot/chat/${entry.questImg}.png` : null,
-        bubbleImg: entry.bubbleImg ? `/static/images/chatbot/chat/${entry.bubbleImg}.png` : null
+        questText: entry.questText || null,
+        bubbleImg: entry.bubbleImg ? `/static/images/chatbot/chat/${entry.bubbleImg}.png` : null,
+        stepIndex: entry.stepIndex
       };
     }
   }
-  return { leftImg: null, questImg: null, bubbleImg: null };
+  return { leftImg: null, questImg: null, questText: null, bubbleImg: null, stepIndex: null };
 }
 
 function updateCh1LeftImage(imagePath) {
@@ -112,6 +131,22 @@ function updateCh1LeftImage(imagePath) {
     img.style.display = "block";
   } else {
     img.style.display = "none";
+  }
+}
+
+// ── Recipe Steps Highlight ─────────────────────────────────────────────────
+function updateRecipeStep(stepIndex) {
+  if (stepIndex === null || stepIndex === undefined) return;
+  
+  for (let i = 1; i <= 4; i++) {
+    const el = document.getElementById(`recipe-step-${i}`);
+    if (el) {
+      if (i === stepIndex) {
+        el.classList.add("active-step");
+      } else {
+        el.classList.remove("active-step");
+      }
+    }
   }
 }
 
@@ -206,21 +241,37 @@ async function sendMessage(isInitial = false) {
 
       appendMessage("bot", replyText, finalBubbleImg);
 
-      const questImgSrc = ch1Imgs.questImg || (replyText.includes("준비되었다면") ? "/static/images/chatbot/chat/mama_quest1.png" : null);
+      let questImgSrc = ch1Imgs.questImg || (replyText.includes("준비되었다면") ? "/static/images/chatbot/chat/quest.png" : null);
+      let questTxt = ch1Imgs.questText || (replyText.includes("준비되었다면") ? "Quest 1 : 엄마의 요리력을 키우세요" : null);
+
+      // 클리어 단계인 경우 강제로 완료 메시지 표시
+      if (data.step === "clear") {
+        questImgSrc = "/static/images/chatbot/chat/quest.png";
+        questTxt = "Quest 1 완료!";
+      }
+
       if (questImgSrc) {
-        updateCh1Image(questImgSrc);
+        updateCh1Image(questImgSrc, questTxt);
       }
 
       if (ch1Imgs.leftImg) {
         updateCh1LeftImage(ch1Imgs.leftImg);
+      } else if (data.step === "clear") {
+        updateCh1LeftImage("/static/images/chatbot/chat/mama_last.png");
       }
+
+      updateRecipeStep(ch1Imgs.stepIndex);
     } else {
       appendMessage("bot", replyText, imagePath);
     }
 
     // ── Chapter switch
     if (data.chapter !== undefined) {
-      applyChapterUI(data.chapter);
+      if (data.choices && data.choices.includes("Quest 2 시작하기")) {
+        // Quest 1 성공 시 화면 전환 보류 (버튼을 누를 때 챕터 2로 넘어가도록 함)
+      } else {
+        applyChapterUI(data.chapter);
+      }
     }
 
     // ── Quest banner (CH2 intro response includes quest field)

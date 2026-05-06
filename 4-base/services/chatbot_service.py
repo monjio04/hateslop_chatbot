@@ -219,7 +219,7 @@ class ChatbotService:
                 state["cleared"].append(1)
                 state["chapter"] = 2
                 reply = self._call_llm(self._build_prompt("mama", llm["success"]))
-                return {"reply": reply, "step": "clear", "choices": [], "image": None}
+                return {"reply": reply, "step": "clear", "choices": ["Quest 2 시작하기"], "image": None}
             else:
                 state["game_over"] = True
                 reply = self._call_llm(self._build_prompt("mama", llm["fail"],
