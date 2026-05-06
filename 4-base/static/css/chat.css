@@ -41,6 +41,7 @@
         cursor: pointer;
         line-height: 1;
       }
+
       .close-btn:hover {
         color: #fff;
       }
@@ -192,6 +193,7 @@
         flex-shrink: 0;
         font-family: "Cafe24 Dangdanghae", sans-serif;
       }
+
       .quest-banner.visible {
         display: block;
       }
@@ -221,6 +223,7 @@
           opacity: 0;
           transform: translateY(8px);
         }
+
         to {
           opacity: 1;
           transform: translateY(0);
@@ -269,6 +272,7 @@
         outline: none;
         color: #333;
       }
+
       .input-bar input[type="text"]::placeholder {
         color: #999;
       }
@@ -285,6 +289,7 @@
         flex-shrink: 0;
         font-family: "Cafe24 Dangdanghae", sans-serif;
       }
+
       .send-btn:hover {
         background: #6b1460;
       }

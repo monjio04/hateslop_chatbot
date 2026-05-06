@@ -225,7 +225,7 @@ class ChatbotService:
                 reply = self._call_llm(self._build_prompt("mama", llm["fail"],
                     {"고기": ch1["meat"], "굽기": ch1["heat"],
                      "소스": ch1["sauce"], "재료": ch1["ingredients"]}))
-                return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": None}
+                return {"reply": reply, "step": "fail", "fail_id": "CH1_FAIL", "choices": ["다시하기"], "image": None}
 
 
     def _ch2_handler(self, state: dict, user_message: str) -> dict:
@@ -410,6 +410,7 @@ class ChatbotService:
         return {
             "reply": f"{last_reply}\n\n{ending['text']}",
             "image": ending.get("image"),
+            "fail_id": "CH2_FAIL" if state.get("game_over") else None
         }
 
     def _ch3_handler(self, state: dict, user_message: str) -> dict:
@@ -530,7 +531,7 @@ class ChatbotService:
                 )
                 reply = self._call_llm(self._build_prompt("papa", llm["fail"],
                     {"변한_모습": desc}))
-                return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": result_image, "sound": None}
+                return {"reply": reply, "step": "fail", "fail_id": "CH3_FAIL", "choices": ["다시하기"], "image": result_image, "sound": None}
 
     # ------------------------------------------------------------------ public
 

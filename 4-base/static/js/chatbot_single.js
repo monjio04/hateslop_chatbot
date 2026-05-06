@@ -1,34 +1,34 @@
 console.log("챗봇 JS 로드 완료");
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const gameContainer  = document.querySelector(".game-container");
-const username       = gameContainer ? gameContainer.dataset.username : "사용자";
-const chatLog        = document.getElementById("chat-log");
+const gameContainer = document.querySelector(".game-container");
+const username = gameContainer ? gameContainer.dataset.username : "사용자";
+const chatLog = document.getElementById("chat-log");
 const userMessageInput = document.getElementById("user-message");
-const sendBtn        = document.getElementById("send-btn");
-const sceneImg       = document.getElementById("scene-img");
-const heartsBox      = document.getElementById("hearts-box");
+const sendBtn = document.getElementById("send-btn");
+const sceneImg = document.getElementById("scene-img");
+const heartsBox = document.getElementById("hearts-box");
 const convincedLabel = document.getElementById("convinced-label");
-const questBanner    = document.getElementById("quest-banner");
+const questBanner = document.getElementById("quest-banner");
 
 // ── Chapter config ─────────────────────────────────────────────────────────
 const CHAPTER_UI = {
   1: {
-    name:       "Mama Odd",
-    scene:      "/static/images/chatbot/chat/rect18.png",
-    avatar:     "/static/images/chatbot/chat/mama_profile.png",
+    name: "Mama Odd",
+    scene: "/static/images/chatbot/chat/rect18.png",
+    avatar: "/static/images/chatbot/chat/mama_profile.png",
     showHearts: false,
   },
   2: {
-    name:       "Bro Odd",
-    scene:      "/static/images/chatbot/chat/bro_question1.png",
-    avatar:     "/static/images/chatbot/chat/bro_profile.png",
+    name: "Bro Odd",
+    scene: "/static/images/chatbot/chat/bro_question1.png",
+    avatar: "/static/images/chatbot/chat/bro_profile.png",
     showHearts: true,
   },
   3: {
-    name:       "Papa Odd",
-    scene:      "",
-    avatar:     "/static/images/chatbot/chat/papa_profile.png",
+    name: "Papa Odd",
+    scene: "",
+    avatar: "/static/images/chatbot/chat/papa_profile.png",
     showHearts: false,
   },
 };
@@ -45,11 +45,7 @@ function applyChapterUI(chapter) {
 
   sceneImg.src = ui.scene;
 
-  // Recipe section: visible only in CH1
-  const recipeSection = document.getElementById("recipe-section");
-  if (recipeSection) {
-    recipeSection.style.display = chapter === 1 ? "block" : "none";
-  }
+
 
   // Hearts + Convinced: visible only in CH2
   heartsBox.style.display = ui.showHearts ? "flex" : "none";
@@ -70,7 +66,7 @@ function applyChapterUI(chapter) {
 // ── CH1 fixed image panel ──────────────────────────────────────────────────
 function updateCh1Image(imagePath) {
   const area = document.getElementById("ch1-image-area");
-  const img  = document.getElementById("ch1-img");
+  const img = document.getElementById("ch1-img");
   if (!area || !img) return;
   if (imagePath) {
     img.src = imagePath;
@@ -87,12 +83,12 @@ function updateCh1Image(imagePath) {
 
 // ── CH1 image auto-detect ─────────────────────────────────────────────────
 const CH1_STATE_MAP = [
-  { keywords: ["준비되었다면", "요리 도와줄게"],       leftImg: "mama_start",        questImg: "mama_quest1", bubbleImg: null },
-  { keywords: ["고기 종류", "착하구나"],              leftImg: "mama_meat_left",    questImg: null, bubbleImg: "mama_meat" },
-  { keywords: ["센불로"],                             leftImg: "mama_fire_left",    questImg: null, bubbleImg: "mama_fire" },
-  { keywords: ["비법 소스"],                          leftImg: "mama_sauce_left",   questImg: null, bubbleImg: "mama_sauce" },
-  { keywords: ["가리는 게 있으면", "재료 좀 선택"],   leftImg: "mama_vegetable_left", questImg: null, bubbleImg: "mama_vegetable" },
-  { keywords: ["아빠랑 동생 불러서", "먹여보자꾸나"], leftImg: "mama_last",         questImg: null, bubbleImg: null },
+  { keywords: ["준비되었다면", "요리 도와줄게"], leftImg: "mama_start", questImg: "mama_quest1", bubbleImg: null },
+  { keywords: ["고기 종류", "착하구나"], leftImg: "mama_meat_left", questImg: null, bubbleImg: "mama_meat" },
+  { keywords: ["센불로"], leftImg: "mama_fire_left", questImg: null, bubbleImg: "mama_fire" },
+  { keywords: ["비법 소스"], leftImg: "mama_sauce_left", questImg: null, bubbleImg: "mama_sauce" },
+  { keywords: ["가리는 게 있으면", "재료 좀 선택"], leftImg: "mama_vegetable_left", questImg: null, bubbleImg: "mama_vegetable" },
+  { keywords: ["아빠랑 동생 불러서", "먹여보자꾸나"], leftImg: "mama_last", questImg: null, bubbleImg: null },
 ];
 
 function getCh1Images(text) {
@@ -156,7 +152,7 @@ function hideConvinced() {
 // ── Sound ──────────────────────────────────────────────────────────────────
 function playSound(name) {
   const audio = new Audio(`/static/sound/${name}.mp3`);
-  audio.play().catch(() => {});
+  audio.play().catch(() => { });
 }
 
 // ── Send message ───────────────────────────────────────────────────────────
@@ -175,9 +171,9 @@ async function sendMessage(isInitial = false) {
 
   try {
     const res = await fetch("/api/chat", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({ message, username }),
+      body: JSON.stringify({ message, username }),
     });
 
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -185,7 +181,10 @@ async function sendMessage(isInitial = false) {
     const data = await res.json();
     removeMessage(loadingId);
 
-    if (data.sound) playSound(data.sound);
+    // 사운드 재생
+    if (data.sound) {
+      playSound(data.sound);
+    }
 
     // Parse reply / image
     let replyText, imagePath;
@@ -204,14 +203,14 @@ async function sendMessage(isInitial = false) {
     if (currentChapter === 1) {
       const ch1Imgs = getCh1Images(replyText);
       const finalBubbleImg = ch1Imgs.bubbleImg || imagePath;
-      
+
       appendMessage("bot", replyText, finalBubbleImg);
-      
+
       const questImgSrc = ch1Imgs.questImg || (replyText.includes("준비되었다면") ? "/static/images/chatbot/chat/mama_quest1.png" : null);
       if (questImgSrc) {
         updateCh1Image(questImgSrc);
       }
-      
+
       if (ch1Imgs.leftImg) {
         updateCh1LeftImage(ch1Imgs.leftImg);
       }
