@@ -70,7 +70,7 @@ const statsEl = document.getElementById("stats-typewriter");
 const questEl = document.getElementById("quest-typewriter");
 const finalBtn = document.getElementById("final-next-btn");
 
-let sceneIdx = 5;
+let sceneIdx = 0;
 let segIdx = 0;
 let charIdx = 0;
 let statsIdx = 0;
@@ -209,6 +209,26 @@ function nextStep() {
     }
 
     type();
+}
+
+// 다음 화면으로 넘어갈 때 이름 저장 및 전달
+if (finalBtn) {
+    finalBtn.addEventListener("click", function (e) {
+        e.preventDefault(); // 기본 이동 동작 막기
+
+        const nameInput = document.getElementById("user-name-input");
+        let userName = nameInput ? nameInput.value.trim() : "";
+
+        // 아무것도 입력하지 않았을 때의 기본값 지정 (필요 시 수정 가능)
+        if (!userName) userName = "사용자";
+
+        // 브라우저 로컬 저장소에 저장 (클라이언트용)
+        localStorage.setItem("playerName", userName);
+
+        // URL 쿼리 파라미터로 붙여서 chat.html로 이동 (서버 전달용)
+        const chatUrl = this.getAttribute("href");
+        window.location.href = `${chatUrl}?username=${encodeURIComponent(userName)}`;
+    });
 }
 
 window.onload = () => {
