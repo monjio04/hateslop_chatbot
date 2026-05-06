@@ -5,37 +5,45 @@ const gameContainer  = document.querySelector(".game-container");
 const username       = gameContainer ? gameContainer.dataset.username : "사용자";
 const chatLog        = document.getElementById("chat-log");
 const userMessageInput = document.getElementById("user-message");
-const sendBtn        = document.getElementById("send-btn");
-const sceneImg       = document.getElementById("scene-img");
-const heartsBox      = document.getElementById("hearts-box");
-const questBanner    = document.getElementById("quest-banner");
+const sendBtn = document.getElementById("send-btn");
+const sceneImg = document.getElementById("scene-img");
+const heartsBox = document.getElementById("hearts-box");
+const convincedLabel = document.getElementById("convinced-label");
+const questBanner = document.getElementById("quest-banner");
 
 // ── Chapter config ─────────────────────────────────────────────────────────
 const CHAPTER_UI = {
   1: {
-    name:        "Mama Odd",
-    scene:       "/static/images/chatbot/chat/rect18.png",
-    avatar:      "/static/images/chatbot/chat/mama_profile.png",
+    name: "Mama Odd",
+    scene: "/static/images/chatbot/chat/rect18.png",
+    avatar: "/static/images/chatbot/chat/mama_profile.png",
     bottomLabel: "/static/images/chatbot/chat/Recipe.png",
+    showHearts: false,
   },
   2: {
-    name:        "Bro Odd",
-    scene:       "/static/images/chatbot/chat/rect18.png",
-    avatar:      "/static/images/chatbot/chat/bro_profile.png",
+    name: "Bro Odd",
+    scene: "/static/images/chatbot/chat/rect18.png",
+    avatar: "/static/images/chatbot/chat/bro_profile.png",
     bottomLabel: "/static/images/chatbot/chat/Convinced.png",
+    showHearts: true,
   },
   3: {
-    name:        "Papa Odd",
-    scene:       "",
-    avatar:      "/static/images/chatbot/chat/papa_profile.png",
-    bottomLabel: null,
+    name: "Papa Odd",
+    scene: "",
+    avatar: "/static/images/chatbot/chat/papa_profile.png",
+    bottomLabel: "/static/images/chatbot/chat/Poison.png",
+    showHearts: false,
   },
 };
 
-let currentChapter = 0;
+const PAPA_PIC1_TRIGGER = "내 발명";
+const PAPA_PIC2_TRIGGER = "그 순간, 아빠는 눈앞에서 새끼 쥐로 변해버렸다";
+const PAPA_QUEST3_IMG = "/static/images/chatbot/chat/papa_quest3.png";
+const MOUSE_SOUNDS = ["mouse_origin", "mouse_mad"];
 
-// ── Bro images ─────────────────────────────────────────────────────────────
+let currentChapter = 0;
 let currentBroQ = -1;
+
 const BRO_RANDOM_IMGS = [1, 2, 3, 4, 5].map(
   n => `/static/images/chatbot/chat/bro_random${n}.png`
 );
@@ -54,6 +62,21 @@ function showBroRandom() {
   );
 }
 
+function clearChatForChapterTransition() {
+  const imageArea = document.getElementById("ch1-image-area");
+  const inputBar = document.querySelector(".input-bar");
+  const rightPanel = document.querySelector(".right-panel");
+
+  if (imageArea && rightPanel && inputBar) {
+    imageArea.style.display = "none";
+    rightPanel.insertBefore(imageArea, inputBar);
+  }
+
+  if (chatLog) {
+    chatLog.innerHTML = "";
+  }
+}
+
 // ── Chapter UI update ──────────────────────────────────────────────────────
 function applyChapterUI(chapter) {
   if (chapter === currentChapter) return;
@@ -63,12 +86,10 @@ function applyChapterUI(chapter) {
   const ui = CHAPTER_UI[chapter];
   if (!ui) return;
 
-  // Scene image
   if (sceneImg) {
     sceneImg.src = ui.scene;
   }
 
-  // Bottom label
   const bottomLabel = document.getElementById("bottom-label");
   if (bottomLabel) {
     if (ui.bottomLabel) {
@@ -79,19 +100,20 @@ function applyChapterUI(chapter) {
     }
   }
 
-  // Recipe steps text: CH1 only
-  const stepsEl = document.getElementById("recipe-steps-text");
-  if (stepsEl) {
-    stepsEl.style.display = chapter === 1 ? "block" : "none";
+  const recipeStepsText = document.getElementById("recipe-steps-text");
+  if (recipeStepsText) {
+    recipeStepsText.style.display = chapter === 1 ? "block" : "none";
   }
 
-  // Hearts: CH2 only
+  // Hearts + Convinced: visible only in CH2
   if (heartsBox) {
-    heartsBox.style.display = chapter === 2 ? "block" : "none";
-
-    if (chapter === 2) {
-      updateHearts(0);
+    heartsBox.style.display = ui.showHearts ? "flex" : "none";
+  }
+  if (!ui.showHearts) {
+    if (convincedLabel) {
+      convincedLabel.style.display = "none";
     }
+    updateHearts(0);
   }
 
   // Quest banner: remove on non-CH2
@@ -104,13 +126,11 @@ function applyChapterUI(chapter) {
     updateCh1Image(null);
   }
 
-  // Bro: reset when leaving CH2
-  if (chapter !== 2) {
+  if (chapter !== 2 && chapter !== 3) {
     currentBroQ = -1;
     updateCh1LeftImage(null);
   }
 
-  // CH2: start bro question 0
   if (chapter === 2) {
     setBroQuestion(0);
   }
@@ -119,8 +139,7 @@ function applyChapterUI(chapter) {
 // ── CH1 fixed image panel ──────────────────────────────────────────────────
 function updateCh1Image(imagePath) {
   const area = document.getElementById("ch1-image-area");
-  const img  = document.getElementById("ch1-img");
-
+  const img = document.getElementById("ch1-img");
   if (!area || !img) return;
 
   if (imagePath) {
@@ -143,42 +162,12 @@ function updateCh1Image(imagePath) {
 
 // ── CH1 image auto-detect ─────────────────────────────────────────────────
 const CH1_STATE_MAP = [
-  {
-    keywords: ["준비되었다면", "요리 도와줄게"],
-    leftImg: "mama_start",
-    questImg: "mama_quest1",
-    bubbleImg: null
-  },
-  {
-    keywords: ["고기 종류", "착하구나"],
-    leftImg: "mama_meat_left",
-    questImg: null,
-    bubbleImg: "mama_meat"
-  },
-  {
-    keywords: ["센불로"],
-    leftImg: "mama_fire_left",
-    questImg: null,
-    bubbleImg: "mama_fire"
-  },
-  {
-    keywords: ["비법 소스"],
-    leftImg: "mama_sauce_left",
-    questImg: null,
-    bubbleImg: "mama_sauce"
-  },
-  {
-    keywords: ["가리는 게 있으면", "재료 좀 선택"],
-    leftImg: "mama_vegetable_left",
-    questImg: null,
-    bubbleImg: "mama_vegetable"
-  },
-  {
-    keywords: ["아빠랑 동생 불러서", "먹여보자꾸나"],
-    leftImg: "mama_last",
-    questImg: null,
-    bubbleImg: null
-  },
+  { keywords: ["준비되었다면", "요리 도와줄게"], leftImg: "mama_start", questImg: "mama_quest1", bubbleImg: null },
+  { keywords: ["고기 종류", "착하구나"], leftImg: "mama_meat_left", questImg: null, bubbleImg: "mama_meat" },
+  { keywords: ["센불로"], leftImg: "mama_fire_left", questImg: null, bubbleImg: "mama_fire" },
+  { keywords: ["비법 소스"], leftImg: "mama_sauce_left", questImg: null, bubbleImg: "mama_sauce" },
+  { keywords: ["가리는 게 있으면", "재료 좀 선택"], leftImg: "mama_vegetable_left", questImg: null, bubbleImg: "mama_vegetable" },
+  { keywords: ["아빠랑 동생 불러서", "먹여보자꾸나"], leftImg: "mama_last", questImg: null, bubbleImg: null },
 ];
 
 function getCh1Images(text) {
@@ -216,6 +205,71 @@ function updateCh1LeftImage(imagePath) {
   } else {
     img.style.display = "none";
   }
+}
+
+function updatePapaSceneFromText(text) {
+  if (!text) return;
+
+  if (text.includes(PAPA_PIC1_TRIGGER)) {
+    updateCh1LeftImage("/static/images/chatbot/chat/papa_pic1.png");
+  }
+
+  if (text.includes(PAPA_PIC2_TRIGGER)) {
+    setTimeout(() => {
+      if (currentChapter === 3) {
+        updateCh1LeftImage("/static/images/chatbot/chat/papa_pic2.png");
+      }
+    }, text.includes(PAPA_PIC1_TRIGGER) ? 3000 : 0);
+  }
+}
+
+function isPapaIntroText(text) {
+  return Boolean(text && text.includes(PAPA_PIC1_TRIGGER) && text.includes(PAPA_PIC2_TRIGGER));
+}
+
+function formatChoices(text, choices) {
+  if (!choices || !Array.isArray(choices) || choices.length === 0) {
+    return text;
+  }
+
+  return `${text}\n  선택지: ['${choices.join("', '")}']`;
+}
+
+function renderPapaIntroSequence(rawText, imagePath, choices = []) {
+  const text = (rawText || "").replace(/\r\n/g, "\n").trim();
+  const firstMatch = text.match(/"내 발명[\s\S]*?찍찍…"/);
+  const firstLine = firstMatch ? firstMatch[0] : "\"내 발명… 드디어 완성되었… 찍찍…\"";
+  const secondLine = "그 순간, 아빠는 눈앞에서 새끼 쥐로 변해버렸다.";
+  const instructionStart = text.indexOf("당신의 주변에는");
+  const promptStart = text.indexOf("\"찍찍찍");
+  const instructionText = instructionStart >= 0 && promptStart >= 0
+    ? text.slice(instructionStart, promptStart).trim()
+    : "";
+  const promptText = promptStart >= 0 ? text.slice(promptStart).trim() : "";
+
+  appendMessage("bot", firstLine, imagePath);
+  playPapaSqueakSound(firstLine);
+  updateCh1LeftImage("/static/images/chatbot/chat/papa_pic1.png");
+
+  setTimeout(() => {
+    appendMessage("bot", secondLine);
+    updateCh1LeftImage("/static/images/chatbot/chat/papa_pic2.png");
+    updateCh1Image(PAPA_QUEST3_IMG);
+  }, 3000);
+
+  setTimeout(() => {
+    if (instructionText) {
+      appendMessage("bot", instructionText);
+    }
+    updateCh1LeftImage("/static/images/chatbot/chat/papa_chart.png");
+  }, 6000);
+
+  setTimeout(() => {
+    if (promptText) {
+      appendMessage("bot", formatChoices(promptText, choices));
+      playPapaSqueakSound(promptText);
+    }
+  }, 7500);
 }
 
 // ── Heart display ──────────────────────────────────────────────────────────
@@ -301,6 +355,16 @@ function playSound(name) {
   audio.play().catch(() => {});
 }
 
+function playRandomMouseSound() {
+  playSound(MOUSE_SOUNDS[Math.floor(Math.random() * MOUSE_SOUNDS.length)]);
+}
+
+function playPapaSqueakSound(text) {
+  if (text && text.includes("찍찍")) {
+    playRandomMouseSound();
+  }
+}
+
 // ── Send message ───────────────────────────────────────────────────────────
 async function sendMessage(isInitial = false) {
   let message;
@@ -322,10 +386,7 @@ async function sendMessage(isInitial = false) {
     const res = await fetch("/api/chat", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        message,
-        username
-      }),
+      body: JSON.stringify({ message, username }),
     });
 
     if (!res.ok) {
@@ -336,10 +397,6 @@ async function sendMessage(isInitial = false) {
     console.log("[CHAT API DATA]", data);
 
     removeMessage(loadingId);
-
-    if (data.sound) {
-      playSound(data.sound);
-    }
 
     // Parse reply / image
     let replyText = "";
@@ -353,65 +410,87 @@ async function sendMessage(isInitial = false) {
       imagePath = data.image || null;
     }
 
-    if (data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
+    const isPapaIntro = data.chapter === 3 && data.step === 1 && isPapaIntroText(replyText);
+    const shouldUsePapaSqueakSound = data.chapter === 3 && replyText.includes("찍찍");
+
+    if (shouldUsePapaSqueakSound) {
+      if (!isPapaIntro) {
+        playPapaSqueakSound(replyText);
+      }
+    } else if (data.sound) {
+      playSound(data.sound);
+    }
+
+    if (!isPapaIntro && data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
       replyText += `\n  선택지: ['${data.choices.join("', '")}']`;
     }
 
-    // ── Chapter switch를 메시지 출력 전에 먼저 판단
     const beforeChapter = currentChapter;
 
-    if (data.chapter !== undefined) {
-      // CH1 성공 후 CH2로 넘어가는 순간
-      if (data.chapter === 2 && beforeChapter === 1) {
-        // 엄마 성공 멘트는 먼저 CH1 스타일로 보여준다.
-        const ch1Imgs = getCh1Images(replyText);
-        const finalBubbleImg = ch1Imgs.bubbleImg || imagePath;
+    if (data.chapter === 2 && beforeChapter === 1) {
+      const ch1Imgs = getCh1Images(replyText);
+      const finalBubbleImg = ch1Imgs.bubbleImg || imagePath;
 
-        appendMessage("bot", replyText, finalBubbleImg);
-        updateCh1Image("/static/images/chatbot/chat/mama_quest1_success.png");
+      appendMessage("bot", replyText, finalBubbleImg);
+      updateCh1Image("/static/images/chatbot/chat/mama_quest1_success.png");
 
-        // 잠깐 성공 이미지 보여준 뒤, CH2 화면으로 전환하고 남동생 intro를 가져온다.
+      setTimeout(() => {
+        clearChatForChapterTransition();
+        applyChapterUI(2);
+
         setTimeout(() => {
-          if (chatLog) {
-            chatLog.innerHTML = "";
+          if (data.next_reply !== undefined) {
+            renderCh2Payload({
+              reply: data.next_reply,
+              image: data.next_image || null,
+              question_idx: data.next_question_idx,
+              score: data.next_score
+            });
+          } else {
+            fetchCh2Intro();
           }
+        }, 700);
+      }, 4500);
 
-          applyChapterUI(2);
-
-          setTimeout(() => {
-            if (data.next_reply !== undefined) {
-              renderCh2Payload({
-                reply: data.next_reply,
-                image: data.next_image || null,
-                question_idx: data.next_question_idx,
-                score: data.next_score
-              });
-            } else {
-              fetchCh2Intro();
-            }
-          }, 700);
-
-        }, 4500);
-
-        return;
-      }
-
-      applyChapterUI(data.chapter);
+      return;
     }
 
-    // ── 일반 메시지 출력
+    if (data.chapter === 3 && beforeChapter === 2 && data.step === "clear") {
+      updateHearts(data.score ?? 3);
+      appendMessage("bot", replyText, imagePath);
+      updateCh1Image("/static/images/chatbot/chat/bro_quest2_success.png");
+
+      setTimeout(() => {
+        clearChatForChapterTransition();
+        applyChapterUI(3);
+
+        setTimeout(() => {
+          const nextReplyText = data.next_reply || "";
+          if (isPapaIntroText(nextReplyText)) {
+            renderPapaIntroSequence(nextReplyText, data.next_image || null, data.next_choices || []);
+          } else {
+            if (nextReplyText.includes("찍찍")) {
+              playPapaSqueakSound(nextReplyText);
+            } else if (data.next_sound) {
+              playSound(data.next_sound);
+            }
+
+            appendMessage("bot", formatChoices(nextReplyText, data.next_choices), data.next_image || null);
+            updatePapaSceneFromText(nextReplyText);
+          }
+        }, 700);
+      }, 4500);
+
+      return;
+    }
+
     if (currentChapter === 1) {
       const ch1Imgs = getCh1Images(replyText);
       const finalBubbleImg = ch1Imgs.bubbleImg || imagePath;
 
       appendMessage("bot", replyText, finalBubbleImg);
 
-      const questImgSrc = ch1Imgs.questImg || (
-        replyText.includes("준비되었다면")
-          ? "/static/images/chatbot/chat/mama_quest1.png"
-          : null
-      );
-
+      const questImgSrc = ch1Imgs.questImg || (replyText.includes("준비되었다면") ? "/static/images/chatbot/chat/mama_quest1.png" : null);
       if (questImgSrc) {
         updateCh1Image(questImgSrc);
       }
@@ -419,14 +498,25 @@ async function sendMessage(isInitial = false) {
       if (ch1Imgs.leftImg) {
         updateCh1LeftImage(ch1Imgs.leftImg);
       }
-
     } else {
-      // 핵심: CH2 포함 나머지 챕터는 서버가 준 replyText 그대로 출력
-      appendMessage("bot", replyText, imagePath);
+      if (currentChapter === 3 && isPapaIntro) {
+        renderPapaIntroSequence(replyText, imagePath, data.choices || []);
+      } else {
+        appendMessage("bot", replyText, imagePath);
+      }
+
+      if (currentChapter === 3 && !isPapaIntro) {
+        updatePapaSceneFromText(replyText);
+      }
     }
 
-    // ── Quest banner
-    if (data.quest && questBanner) {
+    // ── Chapter switch
+    if (data.chapter !== undefined) {
+      applyChapterUI(data.chapter);
+    }
+
+    // ── Quest banner (CH2 intro response includes quest field)
+    if (data.quest) {
       questBanner.textContent = data.quest;
       questBanner.classList.add("visible");
       chatLog.appendChild(questBanner);
@@ -437,15 +527,18 @@ async function sendMessage(isInitial = false) {
     if (data.score !== undefined) {
       updateHearts(data.score);
     }
-
-    // ── Bro image update
     if (currentChapter === 2) {
       if (data.question_idx !== undefined && data.question_idx !== currentBroQ) {
         currentBroQ = data.question_idx;
         setBroQuestion(currentBroQ);
-      } else {
+      } else if (!isInitial) {
         showBroRandom();
       }
+    }
+    if (data.convinced) {
+      showConvinced();
+    } else if (!isInitial) {
+      hideConvinced();
     }
 
   } catch (err) {
