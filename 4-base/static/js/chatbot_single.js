@@ -8,32 +8,45 @@ const userMessageInput = document.getElementById("user-message");
 const sendBtn        = document.getElementById("send-btn");
 const sceneImg       = document.getElementById("scene-img");
 const heartsBox      = document.getElementById("hearts-box");
-const convincedLabel = document.getElementById("convinced-label");
 const questBanner    = document.getElementById("quest-banner");
 
 // ── Chapter config ─────────────────────────────────────────────────────────
 const CHAPTER_UI = {
   1: {
-    name:       "Mama Odd",
-    scene:      "/static/images/chatbot/chat/rect18.png",
-    avatar:     "/static/images/chatbot/chat/mama_profile.png",
-    showHearts: false,
+    name:        "Mama Odd",
+    scene:       "/static/images/chatbot/chat/rect18.png",
+    avatar:      "/static/images/chatbot/chat/mama_profile.png",
+    bottomLabel: "/static/images/chatbot/chat/Recipe.png",
   },
   2: {
-    name:       "Bro Odd",
-    scene:      "/static/images/chatbot/chat/bro_question1.png",
-    avatar:     "/static/images/chatbot/chat/bro_profile.png",
-    showHearts: true,
+    name:        "Bro Odd",
+    scene:       "/static/images/chatbot/chat/rect18.png",
+    avatar:      "/static/images/chatbot/chat/bro_profile.png",
+    bottomLabel: "/static/images/chatbot/chat/Convinced.png",
   },
   3: {
-    name:       "Papa Odd",
-    scene:      "",
-    avatar:     "/static/images/chatbot/chat/papa_profile.png",
-    showHearts: false,
+    name:        "Papa Odd",
+    scene:       "",
+    avatar:      "/static/images/chatbot/chat/papa_profile.png",
+    bottomLabel: null,
   },
 };
 
 let currentChapter = 0;
+
+// ── Bro images ─────────────────────────────────────────────────────────────
+let currentBroQ = -1;
+const BRO_RANDOM_IMGS = [1, 2, 3, 4, 5].map(n => `/static/images/chatbot/chat/bro_random${n}.png`);
+const BRO_QUESTION_IMGS = [1, 2, 3].map(n => `/static/images/chatbot/chat/bro_question${n}.png`);
+
+function setBroQuestion(qIdx) {
+  const safeIdx = Math.min(qIdx, BRO_QUESTION_IMGS.length - 1);
+  updateCh1LeftImage(BRO_QUESTION_IMGS[safeIdx]);
+}
+
+function showBroRandom() {
+  updateCh1LeftImage(BRO_RANDOM_IMGS[Math.floor(Math.random() * BRO_RANDOM_IMGS.length)]);
+}
 
 // ── Chapter UI update ──────────────────────────────────────────────────────
 function applyChapterUI(chapter) {
@@ -43,28 +56,41 @@ function applyChapterUI(chapter) {
   const ui = CHAPTER_UI[chapter];
   if (!ui) return;
 
-  sceneImg.src = ui.scene;
+  // Scene image
+  if (sceneImg) sceneImg.src = ui.scene;
 
-  // Recipe section: visible only in CH1
-  const recipeSection = document.getElementById("recipe-section");
-  if (recipeSection) {
-    recipeSection.style.display = chapter === 1 ? "block" : "none";
+  // Bottom label (Recipe / Convinced / none)
+  const bottomLabel = document.getElementById("bottom-label");
+  if (bottomLabel) {
+    if (ui.bottomLabel) {
+      bottomLabel.src = ui.bottomLabel;
+      bottomLabel.style.display = "block";
+    } else {
+      bottomLabel.style.display = "none";
+    }
   }
 
-  // Hearts + Convinced: visible only in CH2
-  heartsBox.style.display = ui.showHearts ? "flex" : "none";
-  if (!ui.showHearts) {
-    convincedLabel.style.display = "none";
-    updateHearts(0);
+  // Recipe steps text: CH1 only
+  const stepsEl = document.getElementById("recipe-steps-text");
+  if (stepsEl) stepsEl.style.display = chapter === 1 ? "block" : "none";
+
+  // Hearts: CH2 only
+  if (heartsBox) {
+    heartsBox.style.display = chapter === 2 ? "block" : "none";
+    if (chapter === 2) updateHearts(0);
   }
 
-  if (!ui.showHearts) {
-    questBanner.classList.remove("visible");
-  }
+  // Quest banner: remove on non-CH2
+  if (chapter !== 2) questBanner.classList.remove("visible");
 
-  if (chapter !== 1) {
-    updateCh1Image(null);
-  }
+  // CH1 image panel: hide when leaving CH1
+  if (chapter !== 1) updateCh1Image(null);
+
+  // Bro: reset when leaving CH2
+  if (chapter !== 2) { currentBroQ = -1; updateCh1LeftImage(null); }
+
+  // CH2: start bro question 0
+  if (chapter === 2) setBroQuestion(0);
 }
 
 // ── CH1 fixed image panel ──────────────────────────────────────────────────
@@ -74,6 +100,7 @@ function updateCh1Image(imagePath) {
   if (!area || !img) return;
   if (imagePath) {
     img.src = imagePath;
+    img.onload = () => { if (chatLog) chatLog.scrollTop = chatLog.scrollHeight; };
     area.style.display = "block";
     const cl = document.getElementById("chat-log");
     if (cl) {
@@ -127,30 +154,43 @@ const HEART_IMGS = {
   3: "/static/images/chatbot/chat/heart_question3.png",
 };
 
-const BRO_SCENE_IMGS = {
-  0: "/static/images/chatbot/chat/bro_question1.png",
-  1: "/static/images/chatbot/chat/bro_question2.png",
-  2: "/static/images/chatbot/chat/bro_question3.png",
-  3: "/static/images/chatbot/chat/bro_question3.png",
-};
-
 function updateHearts(score) {
   const heartsImg = document.getElementById("hearts-img");
   if (heartsImg) {
     heartsImg.src = HEART_IMGS[score] ?? HEART_IMGS[0];
   }
-  if (currentChapter === 2 && sceneImg) {
-    sceneImg.src = BRO_SCENE_IMGS[score] ?? BRO_SCENE_IMGS[0];
+}
+
+// ── Convinced label (no-op: Convinced.png always shown as bottom-label in CH2)
+function showConvinced() {}
+function hideConvinced() {}
+
+// ── CH2 intro auto-fetch ───────────────────────────────────────────────────
+async function fetchCh2Intro() {
+  const loadingId = appendMessage("bot", "생각 중...");
+  try {
+    const res = await fetch("/api/chat", {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify({ message: " ", username }),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const resp = await res.json();
+    removeMessage(loadingId);
+    const text = typeof resp.reply === "string" ? resp.reply : resp.reply?.reply || "";
+    appendMessage("bot", text);
+    if (resp.quest) {
+      questBanner.textContent = resp.quest;
+      questBanner.classList.add("visible");
+    }
+    if (resp.score !== undefined) updateHearts(resp.score);
+    if (resp.question_idx !== undefined) {
+      currentBroQ = resp.question_idx;
+      setBroQuestion(currentBroQ);
+    }
+  } catch (err) {
+    removeMessage(loadingId);
   }
-}
-
-// ── Convinced label ────────────────────────────────────────────────────────
-function showConvinced() {
-  convincedLabel.style.display = "block";
-}
-
-function hideConvinced() {
-  convincedLabel.style.display = "none";
 }
 
 // ── Sound ──────────────────────────────────────────────────────────────────
@@ -221,10 +261,20 @@ async function sendMessage(isInitial = false) {
 
     // ── Chapter switch
     if (data.chapter !== undefined) {
-      applyChapterUI(data.chapter);
+      const beforeChapter = currentChapter;
+      if (data.chapter === 2 && beforeChapter === 1) {
+        updateCh1Image("/static/images/chatbot/chat/mama_quest1_success.png");
+        setTimeout(() => {
+          if (chatLog) chatLog.innerHTML = "";
+          applyChapterUI(2);
+          setTimeout(fetchCh2Intro, 700);
+        }, 4500);
+      } else {
+        applyChapterUI(data.chapter);
+      }
     }
 
-    // ── Quest banner (CH2 intro response includes quest field)
+    // ── Quest banner
     if (data.quest) {
       questBanner.textContent = data.quest;
       questBanner.classList.add("visible");
@@ -232,14 +282,18 @@ async function sendMessage(isInitial = false) {
       chatLog.scrollTop = chatLog.scrollHeight;
     }
 
-    // ── Hearts & Convinced (CH2)
+    // ── Hearts (CH2)
     if (data.score !== undefined) {
       updateHearts(data.score);
     }
-    if (data.convinced) {
-      showConvinced();
-    } else if (!isInitial) {
-      hideConvinced();
+
+    // ── Bro image update (CH2)
+    if (currentChapter === 2) {
+      showBroRandom();
+      if (data.question_idx !== undefined && data.question_idx !== currentBroQ) {
+        currentBroQ = data.question_idx;
+        setBroQuestion(currentBroQ);
+      }
     }
 
   } catch (err) {
@@ -297,6 +351,7 @@ function appendMessage(sender, text, imageSrc = null) {
     img.classList.add("bot-big-img");
     img.src = imageSrc;
     img.alt = "챗봇 이미지";
+    img.onload = () => { if (chatLog) chatLog.scrollTop = chatLog.scrollHeight; };
     bubble.appendChild(img);
   }
 

@@ -218,13 +218,21 @@ class ChatbotService:
             if is_success:
                 state["cleared"].append(1)
                 state["chapter"] = 2
-                reply = self._call_llm(self._build_prompt("mama", llm["success"]))
+                try:
+                    reply = self._call_llm(self._build_prompt("mama", llm["success"]))
+                except Exception as e:
+                    print(f"[WARN] LLM 실패, fallback 사용: {e}")
+                    reply = "음... 생각보다 괜찮게 됐구나."
                 return {"reply": reply, "step": "clear", "choices": [], "image": None}
             else:
                 state["game_over"] = True
-                reply = self._call_llm(self._build_prompt("mama", llm["fail"],
-                    {"고기": ch1["meat"], "굽기": ch1["heat"],
-                     "소스": ch1["sauce"], "재료": ch1["ingredients"]}))
+                try:
+                    reply = self._call_llm(self._build_prompt("mama", llm["fail"],
+                        {"고기": ch1["meat"], "굽기": ch1["heat"],
+                         "소스": ch1["sauce"], "재료": ch1["ingredients"]}))
+                except Exception as e:
+                    print(f"[WARN] LLM 실패, fallback 사용: {e}")
+                    reply = "이상한 걸 넣은 것 같은데... 내 잘못이 아니야!"
                 return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": None}
 
 
@@ -243,6 +251,8 @@ class ChatbotService:
             return {
                 "reply": f"{ch2['intro']}\n\n🎯 {ch2['quest']}\n\n{first_q}",
                 "image": None,
+                "question_idx": 0,
+                "score": data["score"],
             }
 
         q_idx = data["current_q"]
@@ -272,9 +282,14 @@ class ChatbotService:
                 return self._ch2_ending(state, ch2, reply)
 
             next_q = ch2["questions"][data["current_q"]]["text"]
-            return {"reply": f"{reply}\n\n{next_q}", "image": None}
+            return {
+                "reply": f"{reply}\n\n{next_q}",
+                "image": None,
+                "question_idx": data["current_q"],
+                "score": data["score"],
+            }
 
-        return {"reply": reply, "image": None}
+        return {"reply": reply, "image": None, "question_idx": q_idx, "score": data["score"]}
 
     def _ch2_check_elements(self, bro: dict, ch2: dict, question: dict, user_message: str) -> list:
         elements = ch2["elements"]
@@ -327,16 +342,16 @@ class ChatbotService:
     반드시 아래 JSON 형식으로만 응답하라 (다른 텍스트 금지):
     {{"elements_found": [충족된 요소 ID 배열, 예: [1, 2] 또는 []]}}"""
 
-        raw = self._call_llm(
-            [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}],
-            temperature=0.3,
-        )
-
         try:
+            raw = self._call_llm(
+                [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}],
+                temperature=0.3,
+            )
             result = json.loads(raw)
             found = [e for e in result.get("elements_found", []) if e in (1, 2, 3)]
             return found
-        except (json.JSONDecodeError, KeyError):
+        except Exception as e:
+            print(f"[WARN] CH2 요소 판단 LLM 실패: {e}")
             return []
 
     def _ch2_generate_nudge(self, bro: dict, ch2: dict, elements_found: list, user_message: str) -> str:
@@ -388,14 +403,18 @@ class ChatbotService:
     - "구체적으로", "예를 들어서", "무슨 상황인데" 계열 표현 전부 금지
     - "...아니야?" 처럼 문장 끝에 붙이는 습관적 표현 금지"""
 
-        reply = self._call_llm(
-            [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_message}
-            ],
-            temperature=0.9,
-        )
-        return reply.strip()
+        try:
+            reply = self._call_llm(
+                [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
+                temperature=0.9,
+            )
+            return reply.strip()
+        except Exception as e:
+            print(f"[WARN] CH2 반응 생성 LLM 실패: {e}")
+            return random.choice(ch2["reactions"]["failure"])
 
     def _ch2_ending(self, state: dict, ch2: dict, last_reply: str) -> dict:
         score = state["data"]["score"]
@@ -597,6 +616,7 @@ def get_chatbot_service():
 # 로컬 테스트
 
 if __name__ == "__main__":
+    service = get_chatbot_service()
     service.generate_response("init", "테스터")
     username = "테스터"
 

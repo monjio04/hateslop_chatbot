@@ -77,59 +77,42 @@
         display: block;
       }
 
-      .convinced-img {
-        display: none;
-        margin: 6px 16px 2px;
-        height: 28px;
-        width: auto;
-      }
-
-      .hearts-box {
-        margin: 4px 16px 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-
       .hearts-img {
         width: 100%;
         height: auto;
         display: block;
       }
 
-      /* ── Recipe section (CH1) ─────────────────────────────── */
-      .recipe-section {
-        position: relative;
+      /* ── Bottom panel (all chapters) ──────────────────────── */
+      .bottom-panel {
         flex-shrink: 0;
-        height: 160px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .bottom-label-img {
+        width: 115px;
+        height: 28px;
+        object-fit: contain;
+        margin: 0 0 4px 15px;
+      }
+
+      .rect38-wrapper {
+        position: relative;
+        width: calc(100% - 30px);
+        margin: 0 15px;
       }
 
       .rect38-img {
         width: 100%;
-        height: 100%;
-        object-fit: cover;
+        height: auto;
         display: block;
       }
 
-      .recipe-overlay {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
-        padding: 14px 18px;
-        gap: 10px;
-      }
-
-      .recipe-label-img {
-        width: 115px;
-        height: 28px;
-        object-fit: contain;
-      }
-
       .recipe-steps {
+        position: absolute;
+        bottom: 14px;
+        left: 18px;
         font-size: 1.4rem;
         font-weight: 800;
         color: #2a0a24;
