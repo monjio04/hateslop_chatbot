@@ -1,0 +1,22 @@
+{
+  "CH1_FAIL": {
+    "chapter": 1,
+    "desc": "다음 날, 아빠와 남동생이 배탈에 걸려 화장실에 틀어박혀 있습니다.\n친구는 이상한 냄새를 맡고 그냥 돌아갔습니다.",
+    "image": "/static/images/chatbot/bad_ending/ch1_fail1.png"
+  },
+  "CH2_FAIL_1": {
+    "chapter": 2,
+    "desc": "다음 날, 남동생이 촛불 고백을 강행했습니다.\n친구는 당황한 표정으로 자리를 피했고, 그 이후로 연락이 끊겼습니다.",
+    "image": "/static/images/chatbot/bad_ending/ch2_fail_candle.png"
+  },
+  "CH2_FAIL_2": {
+    "chapter": 2,
+    "desc": "다음 날, 남동생이 정장을 차려입고 장미를 들고 나타났습니다.\n친구는 부담스러워하며 어색하게 웃고 돌아갔습니다.",
+    "image": "/static/images/chatbot/bad_ending/ch2_fail_rose.png"
+  },
+  "DEFAULT": {
+    "chapter": 0,
+    "desc": "살아남지 못했습니다...",
+    "image": null
+  }
+}
