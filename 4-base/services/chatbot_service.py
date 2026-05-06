@@ -36,7 +36,12 @@ class ChatbotService:
 
     def _load_config(self) -> dict:
         config_path = BASE_DIR / "config" / "chatbot_config.json"
-        with open(config_path, "r", encoding="utf-8") as f:
+        with open(config_path, "r", encoding="utf-8-sig") as f:
+            return json.load(f)
+
+    def _load_chapter_data(self, chapter_id: str) -> dict:
+        path = BASE_DIR / "static" / "data" / "chatbot" / f"{chapter_id}.json"
+        with open(path, "r", encoding="utf-8-sig") as f:
             return json.load(f)
 
     def _load_ch_data(self, filename: str) -> dict:
@@ -56,7 +61,7 @@ class ChatbotService:
         """config/characters/*.json 을 모두 읽어서 id 키로 반환"""
         characters = {}
         for char_file in CHARACTERS_DIR.glob("*.json"):
-            with open(char_file, "r", encoding="utf-8") as f:
+            with open(char_file, "r", encoding="utf-8-sig") as f:
                 data = json.load(f)
                 characters[data["id"]] = data
         return characters
@@ -221,6 +226,7 @@ class ChatbotService:
                     {"고기": ch1["meat"], "굽기": ch1["heat"],
                      "소스": ch1["sauce"], "재료": ch1["ingredients"]}))
                 return {"reply": reply, "step": "fail", "choices": ["다시하기"], "image": None}
+
 
     def _ch2_handler(self, state: dict, user_message: str) -> dict:
         data = state["data"]
@@ -627,3 +633,17 @@ if __name__ == "__main__":
             print(f"  선택지: {res['choices']}")
         if res.get("step") in ("clear", "fail"):
             break
+
+    # CH2 직접 진입
+    state = service._get_state("테스터")
+    state["chapter"] = 2
+
+    while True:
+        msg = input("\nYou: ")
+        if msg == "q":
+            break
+        result = service.generate_response(msg, "테스터")
+        print(f"\nBot: {result['reply']}")
+        if result.get("image"):
+            print(f"[이미지: {result['image']}]")
+    

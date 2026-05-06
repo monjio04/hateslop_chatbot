@@ -1,0 +1,79 @@
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #000;
+}
+
+.scene-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh; /* height를 100vh로 고정하여 화면을 꽉 채움 */
+    margin: 0 auto;
+}
+
+/* 배경 이미지: 반응형 핵심 */
+.bg-img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* 이미지가 잘리더라도 비율을 유지하며 화면을 채움 */
+    z-index: 1;
+}
+
+/* 제목 이미지 */
+.title-img {
+    position: absolute;
+    z-index: 2;
+    top: 10%; /* 모바일 배려를 위해 살짝 아래로 조정 */
+    left: 50%; /* 디자인 의도에 따라 50% 혹은 65%로 조정하세요 */
+    transform: translateX(-50%);
+    width: 80%; /* 모바일에서는 제목을 더 크게 */
+    max-width: 800px;
+    height: auto;
+    pointer-events: none;
+    transition: all 0.3s ease;
+}
+
+/* 시작하기 버튼 링크 */
+.start-btn-link {
+    position: absolute;
+    z-index: 3;
+    bottom: 20%; 
+    left: 50%; /* 중앙 정렬로 통일하는 것이 반응형에 유리합니다 */
+    transform: translateX(-50%);
+}
+
+.start-btn-img {
+    width: 180px; /* 기본 버튼 크기 축소 */
+    max-width: 300px;
+    cursor: pointer;
+    transition: transform 0.2s ease-in-out;
+}
+
+/* --- 반응형 미디어 쿼리 (태블릿 및 PC) --- */
+@media (min-width: 768px) {
+    .title-img {
+        top: 6%;
+        left: 65%; /* 원래 요청하신 배치로 복구 */
+        width: 50%;
+    }
+
+    .start-btn-link {
+        left: 65%; /* 원래 요청하신 배치로 복구 */
+    }
+
+    .start-btn-img {
+        width: 250px; /* PC에서는 원래 크기로 */
+    }
+}
+
+/* 호버 효과 */
+.start-btn-img:hover {
+    transform: scale(1.05);
+    filter: brightness(1.1);
+}

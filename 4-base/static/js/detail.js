@@ -70,7 +70,7 @@ const statsEl = document.getElementById("stats-typewriter");
 const questEl = document.getElementById("quest-typewriter");
 const finalBtn = document.getElementById("final-next-btn");
 
-let sceneIdx = 5;
+let sceneIdx = 0;
 let segIdx = 0;
 let charIdx = 0;
 let statsIdx = 0;

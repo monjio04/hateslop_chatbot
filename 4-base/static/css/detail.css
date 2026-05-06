@@ -1,0 +1,274 @@
+@font-face {
+    font-family: 'MaruMinyaHangul';
+    src: url('/static/fonts/x12y12pxMaruMinyaHangul.ttf') format('truetype');
+}
+
+@font-face {
+    font-family: 'Cafe24Dangdanghae';
+    src: url('/static/fonts/Cafe24Dangdanghae-v2.0.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body,
+html {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.scene-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #000;
+}
+
+.bg-img {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    z-index: 1;
+}
+
+.detail-box {
+    position: relative;
+    z-index: 10;
+    width: 90%;
+    max-width: 800px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20%;
+}
+
+.box-skin {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.box-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 10% 15%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    color: white;
+    text-align: center;
+    padding-top: 15%;
+}
+
+#typewriter {
+    white-space: pre-wrap;
+    line-height: 2.5;
+    font-size: 1.0rem;
+    font-family: 'MaruMinyaHangul', sans-serif;
+    text-align: center;
+    width: 100%;
+}
+
+/* 캐릭터 소개 박스 (dialog-box와 같은 위치/크기) */
+.intro-box {
+    position: absolute;
+    z-index: 10;
+    width: 53%;
+    right: 3%;
+    bottom: 6%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 캐릭터 소개 전용 컨텐츠 배치 */
+.intro-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 12% 13% 20%;
+    display: flex;
+    align-items: flex-start;
+    color: white;
+}
+
+.char-info {
+    flex: 1;
+    text-align: left;
+    padding-left: 10%;
+    padding-right: 5%;
+}
+
+.char-info h2 {
+    font-size: 32px;
+    margin-bottom: 30px;
+    font-family: 'MaruMinyaHangul', sans-serif;
+    text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+    margin-top: 5%;
+}
+
+.char-info p {
+    font-size: 25px;
+    color: #ccc;
+    font-family: 'MaruMinyaHangul', sans-serif;
+    text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+}
+
+.char-stats {
+    flex: 1.5;
+    padding-left: 10px;
+}
+
+.char-stats h3 {
+    font-size: 17px;
+    color: #ffd700;
+    margin-bottom: 10px;
+    font-family: 'MaruMinyaHangul', sans-serif;
+}
+
+#stats-typewriter {
+    font-size: 18px;
+    line-height: 1.8;
+    white-space: pre-wrap;
+    font-family: 'MaruMinyaHangul', sans-serif;
+    word-break: keep-all;
+}
+
+/* 퀘스트 화면 창 */
+.quest-box {
+    position: absolute;
+    z-index: 10;
+    width: 90%;
+    max-width: 1200px;
+    text-align: center;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.quest-content {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    padding: 10% 15%;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+#quest-typewriter {
+    white-space: pre-wrap;
+    line-height: 2.0;
+    font-size: 28px;
+    font-family: 'MaruMinyaHangul', sans-serif;
+    color: white;
+    text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000;
+}
+
+.quest-component-img {
+    position: absolute;
+    top: -7%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30%;
+    max-width: 300px;
+    z-index: 11;
+}
+
+/* 세팅 화면 창 */
+.setting-box {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    z-index: 10;
+}
+
+.label {
+    width: 99px;
+    height: 61px;
+}
+
+.label .text-wrapper {
+    position: fixed;
+    top: 160px;
+    left: 690px;
+    font-family: 'Cafe24Dangdanghae', Helvetica, 'MaruMinyaHangul', sans-serif;
+    font-weight: 400;
+    color: #000000;
+    font-size: 45px;
+    letter-spacing: 0;
+    line-height: normal;
+}
+
+.box {
+    width: 219px;
+    height: 63px;
+}
+
+.box .rectangle {
+    position: fixed;
+    top: 160px;
+    left: 793px;
+    width: 219px;
+    height: 52px;
+    background-color: #ffffffcc;
+    border: none;
+    outline: none;
+    font-family: 'Cafe24Dangdanghae', Helvetica, 'MaruMinyaHangul', sans-serif;
+    font-size: 30px;
+    padding: 0 15px;
+    color: #000;
+}
+
+.label-odd .text-wrapper-odd {
+    position: fixed;
+    top: 160px;
+    left: 1030px;
+    font-family: 'Cafe24Dangdanghae', Helvetica, 'MaruMinyaHangul', sans-serif;
+    font-weight: 400;
+    color: #000000;
+    font-size: 45px;
+    letter-spacing: 0;
+    line-height: normal;
+}
+
+.image {
+    position: fixed;
+    bottom: 50px;
+    left: 765px;
+    width: 200px;
+    height: auto;
+    z-index: 100;
+}
+
+.image .chatgpt-image {
+    width: 120%;
+    height: auto;
+    object-fit: contain;
+    cursor: pointer;
+}

@@ -1,187 +1,73 @@
 <!DOCTYPE html>
 <html lang="ko">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ bot.name }} - 상세 정보</title>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ bot.name }} - 캐릭터 설정</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      body {
-        margin: 0;
-        padding: 0;
-        font-family: "IBM Plex Sans KR", sans-serif;
-        background: rgba(0, 0, 0, 0.3);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 100vh;
-      }
-      .modal-container {
-        max-width: 500px;
-        width: 90%;
-        margin: 20px auto;
-        background: #fff;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
-      }
-      .modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&display=swap" rel="stylesheet" />
+    <!-- 통합된 CSS 연결 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
+</head>
 
-        padding: 15px 20px;
-      }
-      .modal-header h2 {
-        margin: 0;
-        flex: 1;
-        text-align: center;
-        font-size: 1.5rem;
-        color: #333;
-      }
-      .close-btn {
-        background: none;
-        border: none;
-        font-size: 1.5rem;
-        cursor: pointer;
-        color: #666;
-      }
-      .modal-content {
-        padding: 30px;
-      }
-      .bot-image {
-        width: 100%;
-        max-width: 300px;
-        height: auto;
-        border-radius: 12px;
-        display: block;
-        margin: 0 auto 20px;
-      }
-      .bot-info {
-        text-align: center;
-      }
-      .bot-info h1 {
-        margin: 0 0 15px 0;
-        font-size: 2rem;
-        color: #333;
-      }
-      .bot-info p {
-        margin: 15px 0;
-        font-size: 1rem;
-        color: #666;
-        line-height: 1.6;
-      }
-      .tags {
-        margin: 15px 0;
-      }
-      .tag {
-        display: inline-block;
-        background: #e0e0e0;
-        color: #555;
-        padding: 6px 12px;
-        border-radius: 15px;
-        margin: 4px;
-        font-size: 0.9rem;
-      }
-      .username-area {
-        margin: 20px 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-      }
-      .username-area label {
-        font-size: 1rem;
-        color: #333;
-      }
-      .username-area input {
-        padding: 8px 12px;
-        font-size: 1rem;
-        border: 2px solid #ddd;
-        border-radius: 8px;
-        width: 50%;
-        transition: border 0.2s;
-      }
-      .username-area input:focus {
-        outline: none;
-        border-color: #764ba2;
-      }
-      .start-chat {
-        display: block;
-        margin: 20px 0;
-        padding: 12px 20px;
-        background: #764ba2;
-        color: #fff;
-        text-decoration: none;
-        border-radius: 8px;
-        font-size: 1.1rem;
-        text-align: center;
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      .start-chat:hover {
-        transform: translateY(-2px);
-      }
-    </style>
-  </head>
-  <body>
-    <div class="modal-container">
-      <div class="modal-header">
-        <h2>{{ bot.name }}</h2>
-        <button
-          class="close-btn"
-          onclick="window.location.href='{{ url_for('index') }}'"
-        >
-          &times;
-        </button>
-      </div>
+<body>
 
-      <div class="modal-content">
-        <img
-          src="./static/images/hateslop/logo_black_genai.png"
-          alt="{{ bot.name }}"
-          class="bot-image"
-        />
+    <div class="scene-container">
+        <!-- 배경 이미지: JS에서 scenes[idx].bg를 통해 실시간으로 변경됨 -->
+        <img src="" class="bg-img">
 
-        <div class="bot-info">
-          <h1>{{ bot.name }}</h1>
-
-          <div class="tags">
-            {% for tag in bot.tags %}
-            <span class="tag">{{ tag }}</span>
-            {% endfor %}
-          </div>
+        <!-- 1. 일반 대사 창: 대사 위주 세그먼트에서 활성화 -->
+        <div class="detail-box" id="dialog-box">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/textbox3.png') }}" class="box-skin">
+            <div class="box-content">
+                <p id="typewriter"></p>
+            </div>
         </div>
 
-        <div class="username-area">
-          <label for="username">이름:</label>
-          <input type="text" id="username" placeholder="이름을 입력하세요" />
+        <!-- 2. 캐릭터 소개 창: 마마 오드 등 가족 소개 시 활성화 -->
+        <div class="intro-box" id="intro-box" style="display: none;">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/textbox2.png') }}" class="box-skin">
+            <div class="intro-content">
+                <!-- 왼쪽: 이름 및 타이틀 (즉시 출력) -->
+                <div class="char-info">
+                    <h2 id="char-name"></h2>
+                    <p id="char-title"></p>
+                </div>
+                <!-- 오른쪽: 전적 기록 (타이핑 효과 적용) -->
+                <div class="char-stats">
+                    <h3>전적</h3>
+                    <p id="stats-typewriter"></p>
+                </div>
+            </div>
         </div>
 
-        <a href="#" class="start-chat" id="start-chat-btn">채팅 시작하기</a>
-      </div>
+        <!-- 3. 퀘스트 화면 창: 중앙 정렬 -->
+        <div class="quest-box" id="quest-box" style="display: none;">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/quest_component.png') }}" class="quest-component-img">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/quest_board.png') }}" class="box-skin">
+            <div class="quest-content">
+                <p id="quest-typewriter"></p>
+            </div>
+        </div>
+
+        <!-- 4. 캐릭터 세팅 창 -->
+        <div class="setting-box" id="setting-box" style="display: none;">
+            <div class="label"><div class="text-wrapper">이름:</div></div>
+            <div class="box"><input type="text" class="rectangle" id="user-name-input"></div>
+            <div class="label-odd"><div class="text-wrapper-odd">오드</div></div>
+        </div>
+
+        <!-- 대화 완료 후 나타날 다음 버튼 (선택 사항) -->
+        <a href="{{ url_for('chat') }}" id="final-next-btn" class="image" style="display: none;">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/opening_button.png') }}"
+                class="chatgpt-image">
+        </a>
     </div>
 
-    <script>
-      const startChatBtn = document.getElementById("start-chat-btn");
-      const usernameInput = document.getElementById("username");
+    <!-- 타이핑 및 장면 전환 로직이 담긴 JS -->
+    <script src="{{ url_for('static', filename='js/detail.js') }}"></script>
+</body>
 
-      startChatBtn.addEventListener("click", function (event) {
-        event.preventDefault();
-        const username = usernameInput.value.trim() || "사용자";
-        window.location.href = `/chat?username=${encodeURIComponent(username)}`;
-      });
-
-      usernameInput.addEventListener("keypress", function (event) {
-        if (event.key === "Enter") {
-          startChatBtn.click();
-        }
-      });
-    </script>
-  </body>
 </html>
