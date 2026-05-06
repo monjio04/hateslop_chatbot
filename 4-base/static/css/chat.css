@@ -101,6 +101,7 @@
         position: relative;
         width: calc(100% - 30px);
         margin: 0 15px;
+        overflow: hidden;
       }
 
       .rect38-img {
@@ -111,13 +112,44 @@
 
       .recipe-steps {
         position: absolute;
-        bottom: 14px;
-        left: 18px;
-        font-size: 1.4rem;
+        left: 50%;
+        top: 50%;
+        width: 92%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        font-size: 1.25rem;
         font-weight: 800;
-        color: #2a0a24;
+        color: #ffffff;
         font-family: "Cafe24 Dangdanghae", sans-serif;
-        line-height: 1.5;
+        line-height: 1.2;
+        white-space: nowrap;
+        z-index: 2;
+      }
+
+      .recipe-steps span[data-recipe-step] {
+        color: #ffffff;
+      }
+
+      .recipe-steps span[data-recipe-step].active {
+        color: #7a2471;
+      }
+
+      .recipe-arrow {
+        color: #ffffff;
+        margin: 0 4px;
+      }
+
+      .papa-bar-img {
+        position: absolute;
+        left: 50%;
+        top: 50%;
+        width: 140%;
+        height: auto;
+        max-width: none;
+        transform: translate(-50%, -50%);
+        transform-origin: center;
+        object-fit: contain;
+        z-index: 2;
       }
 
       /* ── Right panel ─────────────────────────────────────────── */

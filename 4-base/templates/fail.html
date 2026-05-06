@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,7 +9,6 @@
 
 <body>
     <div class="ending-container">
-        <!-- 메인 엔딩 이미지 구역 -->
         <div class="ending-image-wrapper">
             {% if image %}
             <img src="{{ image }}" alt="Ending Image" class="ending-image">
@@ -18,17 +16,14 @@
             <div class="game-over-text">GAME OVER</div>
             {% endif %}
 
-            <!-- Fail 로고 -->
             <img src="/static/images/chatbot/fail/fail_button.png" alt="Fail Logo" class="fail-logo">
         </div>
 
-        <!-- 하단 설명글 -->
         <p class="ending-desc">{{ desc if desc else "살아남지 못했습니다..." }}</p>
     </div>
-    <!-- 우측 하단 리셋 버튼 -->
+
     <a href="/chat" class="reset-btn-link">
         <img src="/static/images/chatbot/fail/reset_button.png" alt="Reset" class="reset-btn-img">
     </a>
 </body>
-
 </html>
