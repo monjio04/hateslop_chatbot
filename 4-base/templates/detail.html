@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ko">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,6 +11,7 @@
     <!-- 통합된 CSS 연결 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='css/detail.css') }}">
 </head>
+
 <body>
 
     <div class="scene-container">
@@ -18,7 +20,7 @@
 
         <!-- 1. 일반 대사 창: 대사 위주 세그먼트에서 활성화 -->
         <div class="detail-box" id="dialog-box">
-            <img src="{{ url_for('static', filename='images/chatbot/opening/textbox.png') }}" class="box-skin">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/textbox3.png') }}" class="box-skin">
             <div class="box-content">
                 <p id="typewriter"></p>
             </div>
@@ -26,7 +28,7 @@
 
         <!-- 2. 캐릭터 소개 창: 마마 오드 등 가족 소개 시 활성화 -->
         <div class="intro-box" id="intro-box" style="display: none;">
-            <img src="{{ url_for('static', filename='images/chatbot/opening/textbox.png') }}" class="box-skin">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/textbox2.png') }}" class="box-skin">
             <div class="intro-content">
                 <!-- 왼쪽: 이름 및 타이틀 (즉시 출력) -->
                 <div class="char-info">
@@ -40,14 +42,32 @@
                 </div>
             </div>
         </div>
-        
+
+        <!-- 3. 퀘스트 화면 창: 중앙 정렬 -->
+        <div class="quest-box" id="quest-box" style="display: none;">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/quest_component.png') }}" class="quest-component-img">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/quest_board.png') }}" class="box-skin">
+            <div class="quest-content">
+                <p id="quest-typewriter"></p>
+            </div>
+        </div>
+
+        <!-- 4. 캐릭터 세팅 창 -->
+        <div class="setting-box" id="setting-box" style="display: none;">
+            <div class="label"><div class="text-wrapper">이름:</div></div>
+            <div class="box"><input type="text" class="rectangle"></div>
+            <div class="label-odd"><div class="text-wrapper-odd">오드</div></div>
+        </div>
+
         <!-- 대화 완료 후 나타날 다음 버튼 (선택 사항) -->
-        <a href="{{ url_for('chat') }}" id="final-next-btn" class="start-btn-link" style="display: none;">
-            <img src="{{ url_for('static', filename='images/chatbot/opening/opening_button.png') }}" class="start-btn-img">
+        <a href="{{ url_for('chat') }}" id="final-next-btn" class="image" style="display: none;">
+            <img src="{{ url_for('static', filename='images/chatbot/opening/opening_button.png') }}"
+                class="chatgpt-image">
         </a>
     </div>
 
     <!-- 타이핑 및 장면 전환 로직이 담긴 JS -->
     <script src="{{ url_for('static', filename='js/detail.js') }}"></script>
 </body>
+
 </html>
