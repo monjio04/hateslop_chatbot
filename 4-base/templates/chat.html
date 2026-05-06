@@ -3,234 +3,24 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ bot_name }}와 대화하기</title>
+    <title>괴짜오드가족</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- NanumSquare Neo (Naver CDN) -->
     <link
-      href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR&display=swap"
+      rel="stylesheet"
+      href="https://hangeul.pstatic.net/hangeul_static/css/NanumSquareNeo.css"
+    />
+    <!-- Cafe24 Dangdanghae + Nanum Gothic fallback -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cafe24+Dangdanghae&family=Nanum+Gothic:wght@400;700&display=swap"
       rel="stylesheet"
     />
-    <link
-      href="{{ url_for('static', filename='css/style.css') }}"
-      rel="stylesheet"
-    />
-    <style>
-      html,
-      body {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-      }
-      body {
-        font-family: "IBM Plex Sans KR", sans-serif;
-        background: #f7f7f7;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-      }
-      .header {
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-
-        padding: 15px 20px;
-        box-sizing: border-box;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-      }
-      .header-center {
-        flex: 1;
-        text-align: center;
-        font-size: 1.5rem;
-        font-weight: 600;
-        color: #333;
-      }
-      .close-btn {
-        font-size: 1.2rem;
-        background: none;
-        border: none;
-        cursor: pointer;
-        color: #666;
-        padding: 5px 10px;
-      }
-      .chat-area {
-        width: 100%;
-        max-width: 900px;
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        padding: 20px;
-        box-sizing: border-box;
-        position: relative;
-      }
-      #chat-log {
-        flex: 1;
-        border: 1px solid #e0e0e0;
-        border-radius: 12px;
-        padding: 20px;
-        background: white;
-        overflow-y: auto;
-        margin-bottom: 15px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-      }
-      .message {
-        margin-bottom: 15px;
-        padding: 12px;
-        border-radius: 12px;
-        word-wrap: break-word;
-        animation: fadeIn 0.3s;
-      }
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-      .message.user {
-        text-align: right;
-        color: #0056b3;
-        margin-left: 20%;
-      }
-      .message.bot {
-        background: #f5f5f5;
-        color: #333;
-        margin-right: 20%;
-      }
-      .bot-big-img {
-        display: block;
-        width: 100%;
-        max-width: 300px;
-        height: auto;
-        margin: 10px auto;
-        border-radius: 12px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-      }
-      .chat-input-area {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-      }
-      .chat-input-area input[type="text"] {
-        flex: 1;
-        padding: 12px 16px;
-        border: 2px solid #ddd;
-        border-radius: 25px;
-        font-size: 1rem;
-        transition: border 0.2s;
-      }
-      .chat-input-area input[type="text"]:focus {
-        outline: none;
-        border-color: #764ba2;
-      }
-      .chat-input-area button.send-btn {
-        padding: 12px 24px;
-        border: none;
-
-        color: #fff;
-        border-radius: 25px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      .chat-input-area button.send-btn:hover {
-        transform: translateY(-2px);
-      }
-      .media-buttons {
-        position: absolute;
-        left: -60px;
-        bottom: 80px;
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .media-buttons button {
-        width: 45px;
-        height: 45px;
-        background: white;
-        border: 2px solid #ddd;
-        border-radius: 50%;
-        cursor: pointer;
-        transition: all 0.2s;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.3rem;
-      }
-      .media-buttons button:hover {
-        background: #764ba2;
-        border-color: #764ba2;
-        color: white;
-        transform: scale(1.1);
-      }
-      .modal {
-        display: none;
-        position: fixed;
-        z-index: 1000;
-        left: 0;
-        top: 0;
-        width: 100%;
-        height: 100%;
-        overflow: auto;
-        background-color: rgba(0, 0, 0, 0.7);
-      }
-      .modal-content {
-        background-color: #fff;
-        margin: 2% auto;
-        padding: 30px;
-        border-radius: 12px;
-        width: 90%;
-        max-width: 1000px;
-        position: relative;
-        animation: slideIn 0.3s;
-      }
-      @keyframes slideIn {
-        from {
-          transform: translateY(-50px);
-          opacity: 0;
-        }
-        to {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-      .modal-close {
-        position: absolute;
-        top: 15px;
-        right: 20px;
-        background: none;
-        border: none;
-        font-size: 2rem;
-        cursor: pointer;
-        color: #999;
-      }
-      .modal-close:hover {
-        color: #333;
-      }
-      .image-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-        gap: 15px;
-        margin-top: 20px;
-      }
-      .image-grid img {
-        width: 100%;
-        height: auto;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: transform 0.2s;
-      }
-      .image-grid img:hover {
-        transform: scale(1.05);
-      }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.css') }}">
   </head>
   <body>
-    <header class="header">
-      <div class="header-center">{{ bot_name }}</div>
+    <header class="game-header">
+      <h1 class="game-title">괴짜오드가족 - 친구방문 D-1</h1>
       <button
         class="close-btn"
         onclick="window.location.href='{{ url_for('index') }}'"
@@ -239,57 +29,53 @@
       </button>
     </header>
 
-    <div class="chat-area" data-username="{{ username }}">
-      <div id="chat-log"></div>
-
-      <div class="chat-input-area">
-        <input
-          type="text"
-          id="user-message"
-          placeholder="메시지를 입력하세요..."
-        />
-        <button class="send-btn" id="send-btn">전송</button>
-      </div>
-    </div>
-
-    <!-- Image Gallery Modal -->
-    <div id="imageModal" class="modal">
-      <div class="modal-content">
-        <button class="modal-close" data-close-modal="imageModal">
-          &times;
-        </button>
-        <h2>📷 이미지 갤러리</h2>
-        <div class="image-grid">
-          {% if image_files %} {% for filename in image_files %}
+    <div class="game-container" data-username="{{ username }}">
+      <!-- Left Panel -->
+      <aside class="left-panel">
+        <div class="scene-wrapper" style="position: relative;">
           <img
-            src="./static/images/hateslop/logo_black_genai.png"
-            alt="{{ filename }}"
+            class="scene-img"
+            id="scene-img"
+            src=""
+            alt="scene"
+            onerror="this.style.visibility='hidden'"
           />
-          {% endfor %} {% else %}
-          <p>이미지가 없습니다.</p>
-          {% endif %}
+          <img
+            id="ch1-left-character-img"
+            src=""
+            alt="character"
+            style="position: absolute; bottom: 15px; left: 15px; width: calc(100% - 30px); height: calc(100% - 30px); object-fit: contain; object-position: bottom; display: none;"
+            onerror="this.style.display='none'"
+          />
         </div>
-      </div>
-    </div>
 
-    <!-- Video Modal -->
-    <div id="videoModal" class="modal">
-      <div class="modal-content">
-        <button class="modal-close" data-close-modal="videoModal">
-          &times;
-        </button>
-        <h2>🎬 영상 보기</h2>
-        <video
-          controls
-          style="width: 100%; border-radius: 12px; margin-top: 20px"
-        >
-          <source
-            src="{{ url_for('static', filename='videos/chatbot/video.mp4') }}"
-            type="video/mp4"
+        <!-- CH2: Convinced image -->
+        <img class="convinced-img" id="convinced-label" src="/static/images/chatbot/chat/Convinced.png" alt="Convinced" style="display: none" onerror="this.style.display='none'" />
+        <!-- CH2: Hearts image -->
+        <div class="hearts-box" id="hearts-box" style="display: none">
+          <img class="hearts-img" id="hearts-img" src="/static/images/chatbot/chat/heart_start.png" alt="hearts" onerror="this.style.visibility='hidden'" />
+        </div>
+      </aside>
+
+      <!-- Right Panel -->
+      <section class="right-panel">
+        <div class="quest-banner" id="quest-banner"></div>
+
+        <div id="chat-log" class="chat-log"></div>
+
+        <div id="ch1-image-area" style="display:none; flex-shrink:0; margin-top: 26px; align-self: center;">
+          <img id="ch1-img" src="" alt="" style="max-height:180px; object-fit:contain; border-radius:8px;" onerror="this.parentElement.style.display='none'" />
+        </div>
+
+        <div class="input-bar">
+          <input
+            type="text"
+            id="user-message"
+            placeholder="메시지를 입력하세요"
           />
-          브라우저가 비디오를 지원하지 않습니다.
-        </video>
-      </div>
+          <button class="send-btn" id="send-btn">전송</button>
+        </div>
+      </section>
     </div>
 
     <script src="{{ url_for('static', filename='js/chatbot_single.js') }}"></script>

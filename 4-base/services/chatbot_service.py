@@ -561,17 +561,20 @@ class ChatbotService:
             chapter = state["chapter"]
 
             if chapter == 1:
-                return self._ch1_handler(state, user_message)
+                result = self._ch1_handler(state, user_message)
             elif chapter == 2:
-                return self._ch2_handler(state, user_message)
+                result = self._ch2_handler(state, user_message)
             elif chapter == 3:
-                return self._ch3_handler(state, user_message)
+                result = self._ch3_handler(state, user_message)
             else:
                 state["game_over"] = True
-                return {
+                result = {
                     "reply": "축하해! 괴짜 가족에서 살아남았어!",
                     "image": None,
                 }
+
+            result["chapter"] = state["chapter"]
+            return result
 
         except Exception as e:
             print(f"[ERROR] 응답 생성 실패: {e}")
@@ -598,7 +601,7 @@ if __name__ == "__main__":
     service.generate_response("init", "테스터")
     username = "테스터"
 
-    print("테스트할 챕터를 선택하세요: 1(엄마) / 3(아빠)")
+    print("테스트할 챕터를 선택하세요: 1(엄마) / 2(남동생) / 3(아빠)")
     ch = input("챕터 번호 > ").strip()
 
     state = service._get_state(username)
@@ -606,6 +609,10 @@ if __name__ == "__main__":
         state["chapter"] = 3
         res = service._ch3_handler(state, "")
         speaker = "아빠"
+    elif ch == "2":
+        state["chapter"] = 2
+        res = service._ch2_handler(state, "")
+        speaker = "남동생"
     else:
         res = service.generate_response("init", username)
         speaker = "엄마"
