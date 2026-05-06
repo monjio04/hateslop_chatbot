@@ -132,22 +132,35 @@ def api_chat():
 @app.route('/fail')
 def fail():
     fail_id = request.args.get('id', 'DEFAULT')
-    
-    # endings.json 파일 읽기
-    endings_path = BASE_DIR / 'static' / 'data' / 'chatbot' / 'endings.json'
-    try:
-        with open(endings_path, 'r', encoding='utf-8') as f:
-            endings_data = json.load(f)
-    except FileNotFoundError:
-        endings_data = {}
 
-    # ID에 해당하는 엔딩 찾기 (없으면 DEFAULT 사용)
-    ending_info = endings_data.get(fail_id, endings_data.get('DEFAULT', {
-        "desc": "살아남지 못했습니다...",
-        "image": None
+    if fail_id.startswith('CH3_'):
+        combo_key = fail_id[4:]
+        ch3_path = BASE_DIR / 'static' / 'data' / 'chatbot' / 'ch3_results.json'
+        try:
+            with open(ch3_path, 'r', encoding='utf-8-sig') as f:
+                ch3_data = json.load(f)
+            entry = ch3_data.get(combo_key, {})
+        except FileNotFoundError:
+            entry = {}
+
+        return render_template(
+            'fail.html',
+            desc=entry.get('text', '해독약 조합이 맞지 않았습니다...'),
+            image=entry.get('image')
+        )
+
+    bad_path = BASE_DIR / 'static' / 'data' / 'chatbot' / 'bad_ending.json'
+    try:
+        with open(bad_path, 'r', encoding='utf-8-sig') as f:
+            bad_data = json.load(f)
+    except FileNotFoundError:
+        bad_data = {}
+
+    entry = bad_data.get(fail_id, bad_data.get('DEFAULT', {
+        'desc': '살아남지 못했습니다...',
+        'image': None
     }))
-    
-    return render_template('fail.html', desc=ending_info.get('desc'), image=ending_info.get('image'))
+    return render_template('fail.html', desc=entry.get('desc'), image=entry.get('image'))
 
 # 헬스체크 엔드포인트 (Vercel용)
 @app.route('/health')

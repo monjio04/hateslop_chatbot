@@ -445,6 +445,7 @@ class ChatbotService:
                 "next_image": next_result.get("image"),
                 "next_choices": next_result.get("choices", []),
                 "next_sound": next_result.get("sound"),
+                "next_used_ml": next_result.get("used_ml", 0),
             }
         else:
             state["game_over"] = True
@@ -502,6 +503,7 @@ class ChatbotService:
                 "reply": dlg["intro"] + prompt_for("나이", 100),
                 "step": 1, "choices": CH3_MEDS["나이"],
                 "multi_select": False, "max_select": 1, "image": None,
+                "used_ml": 0,
                 "sound": "mouse_origin",
             }
 
@@ -516,6 +518,7 @@ class ChatbotService:
                     "reply": prompt_for(category, CH3_TOTAL - used_ml(), msg=wrong_msg),
                     "step": step, "choices": CH3_MEDS[category],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "used_ml": used_ml(),
                     "sound": "mouse_mad",
                 }
 
@@ -530,6 +533,7 @@ class ChatbotService:
                     "reply": dlg["complete"].format(total=used_ml()),
                     "step": 5, "choices": ["먹이기"],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "used_ml": used_ml(),
                     "sound": None,
                 }
             else:
@@ -538,6 +542,7 @@ class ChatbotService:
                     "reply": prompt_for(next_cat, remaining),
                     "step": step + 1, "choices": CH3_MEDS[next_cat],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "used_ml": used_ml(),
                     "sound": "mouse_origin",
                 }
 
@@ -558,6 +563,7 @@ class ChatbotService:
                     "reply": dlg["ml_mismatch"].format(total=total) + prompt_for("나이", 100),
                     "step": 1, "choices": CH3_MEDS["나이"],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "used_ml": 0,
                     "sound": "mouse_mad",
                 }
 
@@ -568,8 +574,14 @@ class ChatbotService:
             if correct:
                 state["cleared"].append(3)
                 state["chapter"] = 4
-                reply = self._call_llm(self._build_prompt("papa", llm["success"]))
-                return {"reply": reply, "step": "clear", "choices": [], "image": result_image, "sound": None}
+                return {
+                    "reply": "",
+                    "step": "clear",
+                    "choices": [],
+                    "image": None,
+                    "sound": None,
+                    "video": "/static/video/happyending.mp4",
+                }
             else:
                 state["game_over"] = True
                 desc = ", ".join(

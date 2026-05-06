@@ -1,15 +1,15 @@
 console.log("챗봇 JS 로드 완료");
 
 // ── DOM refs ───────────────────────────────────────────────────────────────
-const gameContainer  = document.querySelector(".game-container");
-const username       = gameContainer ? gameContainer.dataset.username : "사용자";
-const chatLog        = document.getElementById("chat-log");
+const gameContainer = document.querySelector(".game-container");
+const username = gameContainer ? gameContainer.dataset.username : "사용자";
+const chatLog = document.getElementById("chat-log");
 const userMessageInput = document.getElementById("user-message");
-const sendBtn = document.getElementById("send-btn");
-const sceneImg = document.getElementById("scene-img");
-const heartsBox = document.getElementById("hearts-box");
+const sendBtn        = document.getElementById("send-btn");
+const sceneImg       = document.getElementById("scene-img");
+const heartsBox      = document.getElementById("hearts-box");
 const convincedLabel = document.getElementById("convinced-label");
-const questBanner = document.getElementById("quest-banner");
+const questBanner    = document.getElementById("quest-banner");
 
 // ── Chapter config ─────────────────────────────────────────────────────────
 const CHAPTER_UI = {
@@ -28,11 +28,10 @@ const CHAPTER_UI = {
     showHearts: true,
   },
   3: {
-    name: "Papa Odd",
-    scene: "",
-    avatar: "/static/images/chatbot/chat/papa_profile.png",
+    name:        "Papa Odd",
+    scene:       "",
+    avatar:      "/static/images/chatbot/chat/papa_profile.png",
     bottomLabel: "/static/images/chatbot/chat/Poison.png",
-    showHearts: false,
   },
 };
 
@@ -40,6 +39,7 @@ const PAPA_PIC1_TRIGGER = "내 발명";
 const PAPA_PIC2_TRIGGER = "그 순간, 아빠는 눈앞에서 새끼 쥐로 변해버렸다";
 const PAPA_QUEST3_IMG = "/static/images/chatbot/chat/papa_quest3.png";
 const MOUSE_SOUNDS = ["mouse_origin", "mouse_mad"];
+const PAPA_BAR_VALUES = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
 let currentChapter = 0;
 let currentBroQ = -1;
@@ -77,6 +77,46 @@ function clearChatForChapterTransition() {
   }
 }
 
+function updatePapaBar(usedMl = 0) {
+  const papaBarImg = document.getElementById("papa-bar-img");
+  if (!papaBarImg) return;
+
+  const numericMl = Number(usedMl);
+  const safeMl = Number.isFinite(numericMl) ? numericMl : 0;
+  const closestMl = PAPA_BAR_VALUES.reduce((best, current) => (
+    Math.abs(current - safeMl) < Math.abs(best - safeMl) ? current : best
+  ), 0);
+
+  papaBarImg.src = `/static/images/chatbot/chat/papa_bar_${closestMl}.png`;
+}
+
+function showEndingVideo(videoSrc) {
+  document.body.innerHTML = "";
+  document.body.style.margin = "0";
+  document.body.style.background = "#000";
+  document.body.style.overflow = "hidden";
+
+  const video = document.createElement("video");
+  video.src = videoSrc;
+  video.autoplay = true;
+  video.controls = true;
+  video.playsInline = true;
+  video.style.width = "100vw";
+  video.style.height = "100vh";
+  video.style.objectFit = "contain";
+  video.style.display = "block";
+
+  document.body.appendChild(video);
+  video.play().catch(() => {});
+}
+
+function updateRecipeHighlight(step) {
+  const recipeItems = document.querySelectorAll("[data-recipe-step]");
+  recipeItems.forEach((item) => {
+    item.classList.toggle("active", item.dataset.recipeStep === String(step));
+  });
+}
+
 // ── Chapter UI update ──────────────────────────────────────────────────────
 function applyChapterUI(chapter) {
   if (chapter === currentChapter) return;
@@ -103,6 +143,15 @@ function applyChapterUI(chapter) {
   const recipeStepsText = document.getElementById("recipe-steps-text");
   if (recipeStepsText) {
     recipeStepsText.style.display = chapter === 1 ? "block" : "none";
+  }
+  if (chapter !== 1) {
+    updateRecipeHighlight(null);
+  }
+
+  const papaBarImg = document.getElementById("papa-bar-img");
+  if (papaBarImg) {
+    updatePapaBar(0);
+    papaBarImg.style.display = chapter === 3 ? "block" : "none";
   }
 
   // Hearts + Convinced: visible only in CH2
@@ -139,7 +188,8 @@ function applyChapterUI(chapter) {
 // ── CH1 fixed image panel ──────────────────────────────────────────────────
 function updateCh1Image(imagePath) {
   const area = document.getElementById("ch1-image-area");
-  const img = document.getElementById("ch1-img");
+  const img  = document.getElementById("ch1-img");
+
   if (!area || !img) return;
 
   if (imagePath) {
@@ -289,8 +339,8 @@ function updateHearts(score) {
 }
 
 // ── Convinced label ────────────────────────────────────────────────────────
-function showConvinced() {}
-function hideConvinced() {}
+function showConvinced() { }
+function hideConvinced() { }
 
 function renderCh2Payload(resp) {
   const text = typeof resp.reply === "string"
@@ -323,9 +373,9 @@ async function fetchCh2Intro() {
 
   try {
     const res = await fetch("/api/chat", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
+      body: JSON.stringify({
         message: " ",
         username
       }),
@@ -352,7 +402,7 @@ async function fetchCh2Intro() {
 // ── Sound ──────────────────────────────────────────────────────────────────
 function playSound(name) {
   const audio = new Audio(`/static/sound/${name}.mp3`);
-  audio.play().catch(() => {});
+  audio.play().catch(() => { });
 }
 
 function playRandomMouseSound() {
@@ -384,9 +434,12 @@ async function sendMessage(isInitial = false) {
 
   try {
     const res = await fetch("/api/chat", {
-      method:  "POST",
+      method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message, username }),
+      body:    JSON.stringify({
+        message,
+        username
+      }),
     });
 
     if (!res.ok) {
@@ -427,6 +480,11 @@ async function sendMessage(isInitial = false) {
 
     const beforeChapter = currentChapter;
 
+    if (data.chapter === 4 && data.step === "clear" && data.video) {
+      showEndingVideo(data.video);
+      return;
+    }
+
     if (data.chapter === 2 && beforeChapter === 1) {
       const ch1Imgs = getCh1Images(replyText);
       const finalBubbleImg = ch1Imgs.bubbleImg || imagePath;
@@ -463,6 +521,7 @@ async function sendMessage(isInitial = false) {
       setTimeout(() => {
         clearChatForChapterTransition();
         applyChapterUI(3);
+        updatePapaBar(data.next_used_ml ?? 0);
 
         setTimeout(() => {
           const nextReplyText = data.next_reply || "";
@@ -527,6 +586,15 @@ async function sendMessage(isInitial = false) {
     if (data.score !== undefined) {
       updateHearts(data.score);
     }
+
+    if (data.chapter === 3 && data.used_ml !== undefined) {
+      updatePapaBar(data.used_ml);
+    }
+
+    if (data.chapter === 1 && data.step !== undefined) {
+      updateRecipeHighlight(data.step);
+    }
+
     if (currentChapter === 2) {
       if (data.question_idx !== undefined && data.question_idx !== currentBroQ) {
         currentBroQ = data.question_idx;
@@ -539,6 +607,13 @@ async function sendMessage(isInitial = false) {
       showConvinced();
     } else if (!isInitial) {
       hideConvinced();
+    }
+
+    // ── Fail redirect
+    if (data.step === "fail") {
+      setTimeout(() => {
+        window.location.href = `/fail?id=${data.fail_id || 'DEFAULT'}`;
+      }, 2000);
     }
 
   } catch (err) {
