@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GAME OVER</title>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/fail.css') }}">
+</head>
+<body>
+    {% if image %}
+    <img src="{{ image }}" alt="Ending Image" style="max-width: 80%; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);">
+    {% endif %}
+    
+    <p>{{ desc }}</p>
+    <button onclick="window.location.href='/'">처음으로 돌아가기</button>
+</body>
+</html>

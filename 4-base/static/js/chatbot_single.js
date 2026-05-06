@@ -12,7 +12,7 @@ const imageBtn = document.getElementById("imageBtn");
 // 사운드 재생
 function playSound(name) {
   const audio = new Audio(`/static/sound/${name}.mp3`);
-  audio.play().catch(() => {});
+  audio.play().catch(() => { });
 }
 
 // 메시지 전송 함수
@@ -54,6 +54,24 @@ async function sendMessage(isInitial = false) {
     // 사운드 재생
     if (data.sound) {
       playSound(data.sound);
+    }
+
+    // 실패(fail) 감지 및 페이지 이동 로직
+    if (data.step === "fail" || data.game_over === true) {
+      // 1. 실패 메시지 파싱
+      let replyText = typeof data.reply === "object" ? data.reply.reply || data.reply : data.reply;
+      let imagePath = typeof data.reply === "object" ? data.reply.image || null : null;
+      let failId = data.fail_id || (typeof data.reply === "object" ? data.reply.fail_id || "DEFAULT" : "DEFAULT");
+
+      // 2. 채팅창에 마지막 메시지 띄우기
+      appendMessage("bot", replyText, imagePath);
+
+      // 3. 3초 대기 후 실패 페이지로 강제 이동
+      setTimeout(() => {
+        window.location.href = `/fail?id=${failId}`;
+      }, 3000);
+
+      return; // 일반 메시지 처리 로직 스킵
     }
 
     // 응답 파싱
