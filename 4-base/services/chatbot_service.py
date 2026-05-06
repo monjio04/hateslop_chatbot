@@ -223,7 +223,18 @@ class ChatbotService:
                 except Exception as e:
                     print(f"[WARN] LLM 실패, fallback 사용: {e}")
                     reply = "음... 생각보다 괜찮게 됐구나."
-                return {"reply": reply, "step": "clear", "choices": [], "image": None}
+                next_result = self._ch2_handler(state, "")
+                return {
+                    "reply": reply,
+                    "step": "clear",
+                    "choices": [],
+                    "image": None,
+                    "next_chapter": 2,
+                    "next_reply": next_result.get("reply", ""),
+                    "next_image": next_result.get("image"),
+                    "next_question_idx": next_result.get("question_idx"),
+                    "next_score": next_result.get("score"),
+                }
             else:
                 state["game_over"] = True
                 try:
