@@ -68,6 +68,13 @@
 
     <!-- 타이핑 및 장면 전환 로직이 담긴 JS -->
     <script src="{{ url_for('static', filename='js/detail.js') }}"></script>
+    <audio id="bg-music" src="/static/sound/opening.mp3" loop></audio>
+    <script>
+      const bgMusic = document.getElementById('bg-music');
+      bgMusic.play().catch(() => {
+        document.addEventListener('click', () => bgMusic.play(), { once: true });
+      });
+    </script>
 </body>
 
 </html>
