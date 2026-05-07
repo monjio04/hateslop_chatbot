@@ -434,10 +434,18 @@ class ChatbotService:
         if ending.get("next_chapter"):
             state["chapter"] = 3
             state["data"] = {}
+            next_result = self._ch3_handler(state, "")
             return {
                 "reply": f"{last_reply}\n\n{ending['text']}",
                 "image": ending.get("image"),
-                "step": "clear"
+                "step": "clear",
+                "score": score,
+                "next_chapter": 3,
+                "next_reply": next_result.get("reply", ""),
+                "next_image": next_result.get("image"),
+                "next_choices": next_result.get("choices", []),
+                "next_sound": next_result.get("sound"),
+                "next_used_ml": next_result.get("used_ml", 0),
             }
         else:
             state["game_over"] = True
@@ -448,6 +456,7 @@ class ChatbotService:
                 "reply": f"{last_reply}\n\n{ending['text']}",
                 "image": ending.get("image"),
                 "step": "fail",
+                "score": score,
                 "fail_id": fail_id
             }
 
@@ -494,6 +503,7 @@ class ChatbotService:
                 "reply": dlg["intro"] + prompt_for("나이", 100),
                 "step": 1, "choices": CH3_MEDS["나이"],
                 "multi_select": False, "max_select": 1, "image": None,
+                "used_ml": 0,
                 "sound": "mouse_origin",
             }
 
@@ -508,6 +518,7 @@ class ChatbotService:
                     "reply": prompt_for(category, CH3_TOTAL - used_ml(), msg=wrong_msg),
                     "step": step, "choices": CH3_MEDS[category],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "used_ml": used_ml(),
                     "sound": "mouse_mad",
                 }
 
@@ -522,6 +533,7 @@ class ChatbotService:
                     "reply": dlg["complete"].format(total=used_ml()),
                     "step": 5, "choices": ["먹이기"],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "used_ml": used_ml(),
                     "sound": None,
                 }
             else:
@@ -530,6 +542,7 @@ class ChatbotService:
                     "reply": prompt_for(next_cat, remaining),
                     "step": step + 1, "choices": CH3_MEDS[next_cat],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "used_ml": used_ml(),
                     "sound": "mouse_origin",
                 }
 
@@ -550,6 +563,7 @@ class ChatbotService:
                     "reply": dlg["ml_mismatch"].format(total=total) + prompt_for("나이", 100),
                     "step": 1, "choices": CH3_MEDS["나이"],
                     "multi_select": False, "max_select": 1, "image": None,
+                    "used_ml": 0,
                     "sound": "mouse_mad",
                 }
 
@@ -560,8 +574,14 @@ class ChatbotService:
             if correct:
                 state["cleared"].append(3)
                 state["chapter"] = 4
-                reply = self._call_llm(self._build_prompt("papa", llm["success"]))
-                return {"reply": reply, "step": "clear", "choices": [], "image": result_image, "sound": None}
+                return {
+                    "reply": "",
+                    "step": "clear",
+                    "choices": [],
+                    "image": None,
+                    "sound": None,
+                    "video": "/static/video/happyending.mp4",
+                }
             else:
                 state["game_over"] = True
                 desc = ", ".join(
@@ -580,6 +600,24 @@ class ChatbotService:
             self._reset_state(session_id)
             state = self._get_state(session_id)
             return self._ch1_handler(state, "")
+
+        # 챕터별 재시작: restart_1, restart_2, restart_3
+        if user_message.strip().startswith("restart_"):
+            try:
+                chapter = int(user_message.strip().split("_")[1])
+            except (IndexError, ValueError):
+                chapter = 1
+            state = self._get_state(session_id)
+            state["game_over"] = False
+            state["chapter"] = chapter
+            state["data"] = {}
+            if chapter == 1:
+                return self._ch1_handler(state, "")
+            elif chapter == 2:
+                return self._ch2_handler(state, " ")
+            elif chapter == 3:
+                return self._ch3_handler(state, "")
+
         if user_message.strip() == "다시하기":
             state = self._get_state(session_id)
             state["data"].pop("ch1", None)
@@ -686,4 +724,3 @@ if __name__ == "__main__":
         print(f"\nBot: {result['reply']}")
         if result.get("image"):
             print(f"[이미지: {result['image']}]")
-    

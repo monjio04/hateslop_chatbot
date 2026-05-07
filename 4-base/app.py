@@ -131,21 +131,44 @@ def api_chat():
 # 실패 페이지
 @app.route('/fail')
 def fail():
-    fail_id = request.args.get('id', 'DEFAULT')
+    fail_id  = request.args.get('id', 'DEFAULT')
+    username = request.args.get('username', '사용자')
 
     if fail_id.startswith('CH3_'):
         combo_key = fail_id[4:]
         ch3_path = BASE_DIR / 'static' / 'data' / 'chatbot' / 'ch3_results.json'
-        with open(ch3_path, 'r', encoding='utf-8-sig') as f:
-            ch3_data = json.load(f)
-        entry = ch3_data.get(combo_key, {"text": "실패...", "image": None})
-        return render_template('fail.html', desc=entry.get('text'), image=entry.get('image'))
+        try:
+            with open(ch3_path, 'r', encoding='utf-8-sig') as f:
+                ch3_data = json.load(f)
+            entry = ch3_data.get(combo_key, {})
+        except FileNotFoundError:
+            entry = {}
+
+        return render_template(
+            'fail.html',
+            desc=entry.get('text', '해독약 조합이 맞지 않았습니다...'),
+            image=entry.get('image'),
+            chapter=3,
+            username=username
+        )
 
     bad_path = BASE_DIR / 'static' / 'data' / 'chatbot' / 'bad_ending.json'
-    with open(bad_path, 'r', encoding='utf-8-sig') as f:
-        bad_data = json.load(f)
-    entry = bad_data.get(fail_id, bad_data.get('DEFAULT', {}))
-    return render_template('fail.html', desc=entry.get('desc'), image=entry.get('image'))
+    try:
+        with open(bad_path, 'r', encoding='utf-8-sig') as f:
+            bad_data = json.load(f)
+    except FileNotFoundError:
+        bad_data = {}
+
+    entry = bad_data.get(fail_id, bad_data.get('DEFAULT', {
+        'desc': '살아남지 못했습니다...', 'image': None, 'chapter': 1
+    }))
+    return render_template(
+        'fail.html',
+        desc=entry.get('desc'),
+        image=entry.get('image'),
+        chapter=entry.get('chapter', 1),
+        username=username
+    )
 
 # 성공 페이지
 @app.route('/success')
