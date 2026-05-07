@@ -493,6 +493,7 @@ class ChatbotService:
             return (
                 f"\"{sound}\"\n"
                 f"({msg} — {meds})\n"
+                f"[SPLIT]\n"
                 f"남은 ml: {remaining}ml"
             )
 
