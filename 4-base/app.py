@@ -147,6 +147,11 @@ def fail():
     entry = bad_data.get(fail_id, bad_data.get('DEFAULT', {}))
     return render_template('fail.html', desc=entry.get('desc'), image=entry.get('image'))
 
+# 성공 페이지
+@app.route('/success')
+def success():
+    return render_template('success.html')
+
 # 헬스체크 엔드포인트 (Vercel용)
 @app.route('/health')
 def health():

@@ -397,6 +397,13 @@ async function sendMessage(isInitial = false) {
       }
 
       applyChapterUI(data.chapter);
+
+      // 모든 챕터 성공 (Chapter 4 진입) 시 성공 페이지로 이동
+      if (data.chapter === 4) {
+        setTimeout(() => {
+          window.location.href = '/success';
+        }, 3000); // 3초 뒤 이동 (마지막 메시지 읽을 시간 제공)
+      }
     }
 
     // ── 일반 메시지 출력

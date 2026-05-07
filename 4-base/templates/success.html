@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SUCCESS - 괴짜 가족에서 살아남기</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/success.css') }}">
+</head>
+<body>
+    <div class="container">
+        <video id="successVideo" autoplay muted playsinline>
+            <source src="/static/video/happyending.mp4" type="video/mp4">
+            비디오를 지원하지 않는 브라우저입니다.
+        </video>
+
+        <div id="successScreen" class="success-screen">
+            <div class="photo-wrapper">
+                <img src="/static/images/chatbot/ending/photo.png" alt="Success Photo" class="main-photo">
+                <img src="/static/images/chatbot/ending/Clear.png" alt="Clear Logo" class="clear-logo">
+            </div>
+
+            <p class="success-desc">친구가 이상함을 느끼지 못했습니다.<br>완벽한 하루였습니다.</p>
+
+            <a href="/" class="home-overlay">
+                <img src="/static/images/chatbot/fail/reset_button.png" alt="Home" class="home-btn-img">
+            </a>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('successVideo');
+        const screen = document.getElementById('successScreen');
+
+        function showSuccess() {
+            video.classList.add('hidden');
+            video.pause();
+            screen.classList.add('visible');
+        }
+
+        video.addEventListener('ended', showSuccess);
+        video.addEventListener('click', showSuccess);
+    </script>
+</body>
+</html>
