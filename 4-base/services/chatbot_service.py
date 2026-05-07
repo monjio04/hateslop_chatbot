@@ -574,13 +574,17 @@ class ChatbotService:
             if correct:
                 state["cleared"].append(3)
                 state["chapter"] = 4
+                try:
+                    reply = self._call_llm(self._build_prompt("papa", llm["success"]))
+                except Exception as e:
+                    print(f"[WARN] LLM 실패, fallback 사용: {e}")
+                    reply = "찍찍... 아, 아니 이게 무슨... 나 돌아왔어!?"
                 return {
-                    "reply": "",
+                    "reply": reply,
                     "step": "clear",
                     "choices": [],
-                    "image": None,
+                    "image": result_image,
                     "sound": None,
-                    "video": "/static/video/happyending.mp4",
                 }
             else:
                 state["game_over"] = True
@@ -600,6 +604,28 @@ class ChatbotService:
             self._reset_state(session_id)
             state = self._get_state(session_id)
             return self._ch1_handler(state, "")
+
+        # 챕터별 재시작: restart_1, restart_2, restart_3
+        if user_message.strip().startswith("restart_"):
+            try:
+                chapter = int(user_message.strip().split("_")[1])
+            except (IndexError, ValueError):
+                chapter = 1
+            state = self._get_state(session_id)
+            state["game_over"] = False
+            state["chapter"] = chapter
+            state["data"] = {}
+            if chapter == 1:
+                result = self._ch1_handler(state, "")
+            elif chapter == 2:
+                result = self._ch2_handler(state, " ")
+            elif chapter == 3:
+                result = self._ch3_handler(state, "")
+            else:
+                result = {"reply": "다시 시작합니다.", "image": None}
+            result["chapter"] = chapter
+            return result
+
         if user_message.strip() == "다시하기":
             state = self._get_state(session_id)
             state["data"].pop("ch1", None)

@@ -480,8 +480,12 @@ async function sendMessage(isInitial = false) {
 
     const beforeChapter = currentChapter;
 
-    if (data.chapter === 4 && data.step === "clear" && data.video) {
-      showEndingVideo(data.video);
+    if (data.chapter === 4) {
+      if (replyText) appendMessage("bot", replyText, imagePath);
+      updateCh1Image("/static/images/chatbot/chat/papa_quest3_success.png");
+      setTimeout(() => {
+        window.location.href = "/success";
+      }, 4500);
       return;
     }
 
@@ -611,8 +615,10 @@ async function sendMessage(isInitial = false) {
 
     // ── Fail redirect
     if (data.step === "fail") {
+      localStorage.setItem("restartChapter", currentChapter);
+      localStorage.setItem("restartUsername", username);
       setTimeout(() => {
-        window.location.href = `/fail?id=${data.fail_id || 'DEFAULT'}`;
+        window.location.href = `/fail?id=${data.fail_id || 'DEFAULT'}&username=${encodeURIComponent(username)}`;
       }, 2000);
     }
 
@@ -722,11 +728,60 @@ if (sendBtn) {
 
 // ── Init ───────────────────────────────────────────────────────────────────
 window.addEventListener("load", () => {
-  applyChapterUI(1);
+  const params = new URLSearchParams(window.location.search);
+  const restartChapter = params.get("restart");
 
-  setTimeout(() => {
-    if (chatLog && chatLog.childElementCount === 0) {
-      sendMessage(true);
-    }
-  }, 500);
+  const storedChapter = localStorage.getItem("restartChapter");
+  localStorage.removeItem("restartChapter");
+  localStorage.removeItem("restartUsername");
+
+  if (storedChapter) {
+    setTimeout(() => {
+      sendMessageRaw(`restart_${storedChapter}`);
+    }, 500);
+  } else {
+    applyChapterUI(1);
+    setTimeout(() => {
+      if (chatLog && chatLog.childElementCount === 0) {
+        sendMessage(true);
+      }
+    }, 500);
+  }
 });
+
+async function sendMessageRaw(message) {
+  const loadingId = appendMessage("bot", "생각 중...");
+  try {
+    const res = await fetch("/api/chat", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ message, username }),
+    });
+    const data = await res.json();
+    removeMessage(loadingId);
+
+    const chapter = data.chapter;
+    if (chapter !== undefined) applyChapterUI(chapter);
+
+    const text = typeof data.reply === "string" ? data.reply : (data.reply?.reply || "");
+    const img  = data.image || null;
+
+    if (chapter === 3) {
+      if (isPapaIntroText(text)) {
+        renderPapaIntroSequence(text, img, data.choices || []);
+      } else {
+        appendMessage("bot", formatChoices(text, data.choices || []), img);
+        updatePapaSceneFromText(text);
+        if (text.includes("찍찍")) playPapaSqueakSound(text);
+      }
+    } else {
+      appendMessage("bot", text, img);
+      if (data.choices && data.choices.length > 0 && data.step !== "clear") {
+        appendMessage("bot", `선택지: [${data.choices.join(", ")}]`);
+      }
+    }
+    if (data.used_ml !== undefined) updatePapaBar(data.used_ml);
+  } catch (err) {
+    removeMessage(loadingId);
+  }
+}

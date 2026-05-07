@@ -131,7 +131,8 @@ def api_chat():
 # 실패 페이지
 @app.route('/fail')
 def fail():
-    fail_id = request.args.get('id', 'DEFAULT')
+    fail_id  = request.args.get('id', 'DEFAULT')
+    username = request.args.get('username', '사용자')
 
     if fail_id.startswith('CH3_'):
         combo_key = fail_id[4:]
@@ -143,10 +144,13 @@ def fail():
         except FileNotFoundError:
             entry = {}
 
+        ch3_desc = '아빠를 제대로 되돌리는 데 실패했습니다.\n다음 날, 아빠는 또 이상한 발명을 하다 결국 집을 날려먹고 맙니다.'
         return render_template(
             'fail.html',
-            desc=entry.get('text', '해독약 조합이 맞지 않았습니다...'),
-            image=entry.get('image')
+            desc=ch3_desc,
+            image=entry.get('image'),
+            chapter=3,
+            username=username
         )
 
     bad_path = BASE_DIR / 'static' / 'data' / 'chatbot' / 'bad_ending.json'
@@ -157,10 +161,21 @@ def fail():
         bad_data = {}
 
     entry = bad_data.get(fail_id, bad_data.get('DEFAULT', {
-        'desc': '살아남지 못했습니다...',
-        'image': None
+        'desc': '살아남지 못했습니다...', 'image': None, 'chapter': 1
     }))
-    return render_template('fail.html', desc=entry.get('desc'), image=entry.get('image'))
+    desc = (entry.get('desc') or '').replace('NN 오드', f'{username} 오드')
+    return render_template(
+        'fail.html',
+        desc=desc,
+        image=entry.get('image'),
+        chapter=entry.get('chapter', 1),
+        username=username
+    )
+
+# 성공 페이지
+@app.route('/success')
+def success():
+    return render_template('success.html')
 
 # 헬스체크 엔드포인트 (Vercel용)
 @app.route('/health')
