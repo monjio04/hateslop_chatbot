@@ -38,11 +38,12 @@ const CHAPTER_UI = {
 const PAPA_PIC1_TRIGGER = "내 발명";
 const PAPA_PIC2_TRIGGER = "그 순간, 아빠는 눈앞에서 새끼 쥐로 변해버렸다";
 const PAPA_QUEST3_IMG = "/static/images/chatbot/chat/papa_quest3.png";
-const MOUSE_SOUNDS = ["mouse_origin", "mouse_mad"];
+const MOUSE_SOUNDS = ["mouse_origin"];
 const PAPA_BAR_VALUES = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 
 let currentChapter = 0;
 let currentBroQ = -1;
+let mouseTimerInterval = null;
 
 const BRO_RANDOM_IMGS = [1, 2, 3, 4, 5].map(
   n => `/static/images/chatbot/chat/bro_random${n}.png`
@@ -121,7 +122,9 @@ function updateRecipeHighlight(step) {
 function applyChapterUI(chapter) {
   if (chapter === currentChapter) return;
 
+  const prevChapter = currentChapter;
   currentChapter = chapter;
+
 
   const ui = CHAPTER_UI[chapter];
   if (!ui) return;
@@ -448,9 +451,8 @@ function playSound(name) {
   audio.play().catch(() => { });
 }
 
-function playRandomMouseSound() {
-  playSound(MOUSE_SOUNDS[Math.floor(Math.random() * MOUSE_SOUNDS.length)]);
-}
+function playRandomMouseSound() { }
+
 
 function playPapaSqueakSound(text) {
   if (text && text.includes("찍찍")) {

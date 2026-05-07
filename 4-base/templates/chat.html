@@ -92,5 +92,12 @@
     </div>
 
     <script src="{{ url_for('static', filename='js/chatbot_single.js') }}"></script>
+    <audio id="bg-music" src="/static/sound/main.mp3" loop></audio>
+    <script>
+      const bgMusic = document.getElementById('bg-music');
+      bgMusic.play().catch(() => {
+        document.addEventListener('click', () => bgMusic.play(), { once: true });
+      });
+    </script>
   </body>
 </html>

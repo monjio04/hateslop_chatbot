@@ -22,5 +22,10 @@
         </a>
     </div>
 
+    <audio id="bg-music" src="/static/sound/opening.mp3" loop autoplay></audio>
+    <script>
+      const bgMusic = document.getElementById('bg-music');
+      bgMusic.play().catch(() => {});
+    </script>
 </body>
 </html>
