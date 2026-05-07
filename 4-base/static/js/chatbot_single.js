@@ -277,6 +277,10 @@ function isPapaIntroText(text) {
   return Boolean(text && text.includes(PAPA_PIC1_TRIGGER) && text.includes(PAPA_PIC2_TRIGGER));
 }
 
+function isBroIntroText(text) {
+  return Boolean(text && text.includes("내일 누나 친구 온다며?") && text.includes("Quest 2"));
+}
+
 function formatChoices(text, choices) {
   if (!choices || !Array.isArray(choices) || choices.length === 0) {
     return text;
@@ -322,6 +326,34 @@ function renderPapaIntroSequence(rawText, imagePath, choices = []) {
   }, 7500);
 }
 
+// ── CH2 intro sequence ─────────────────────────────────────────────────────
+function renderBroIntroSequence(rawText, imagePath, score, questionIdx) {
+  const text = (rawText || "").replace(/\r\n/g, "\n").trim();
+  const parts = text.split("\n\n").filter(p => p.trim());
+
+  // Expected parts: [Intro, Quest Banner Text, First Question]
+  const introText = parts[0] || "";
+  const questText = parts[1] || "Quest 2 : 동생의 연애력을 키우세요";
+  const firstQ    = parts[2] || "";
+
+  appendMessage("bot", introText);
+
+  setTimeout(() => {
+    updateCh1Image("/static/images/chatbot/chat/bro_quest2.png");
+  }, 2500);
+
+  setTimeout(() => {
+    if (firstQ) {
+      appendMessage("bot", firstQ);
+    }
+    if (score !== undefined) updateHearts(score);
+    if (questionIdx !== undefined) {
+      currentBroQ = questionIdx;
+      setBroQuestion(currentBroQ);
+    }
+  }, 5000);
+}
+
 // ── Heart display ──────────────────────────────────────────────────────────
 const HEART_IMGS = {
   0: "/static/images/chatbot/chat/heart_start.png",
@@ -346,6 +378,11 @@ function renderCh2Payload(resp) {
   const text = typeof resp.reply === "string"
     ? resp.reply
     : resp.reply?.reply || "";
+
+  if (isBroIntroText(text)) {
+    renderBroIntroSequence(text, resp.image, resp.score, resp.question_idx);
+    return;
+  }
 
   appendMessage("bot", text, resp.image || null);
 
@@ -502,12 +539,17 @@ async function sendMessage(isInitial = false) {
 
         setTimeout(() => {
           if (data.next_reply !== undefined) {
-            renderCh2Payload({
+            const nextResp = {
               reply: data.next_reply,
               image: data.next_image || null,
               question_idx: data.next_question_idx,
               score: data.next_score
-            });
+            };
+            if (isBroIntroText(data.next_reply)) {
+              renderBroIntroSequence(data.next_reply, nextResp.image, nextResp.score, nextResp.question_idx);
+            } else {
+              renderCh2Payload(nextResp);
+            }
           } else {
             fetchCh2Intro();
           }
@@ -773,6 +815,12 @@ async function sendMessageRaw(message) {
         appendMessage("bot", formatChoices(text, data.choices || []), img);
         updatePapaSceneFromText(text);
         if (text.includes("찍찍")) playPapaSqueakSound(text);
+      }
+    } else if (chapter === 2) {
+      if (isBroIntroText(text)) {
+        renderBroIntroSequence(text, img, data.score, data.question_idx);
+      } else {
+        renderCh2Payload(data);
       }
     } else {
       appendMessage("bot", text, img);
