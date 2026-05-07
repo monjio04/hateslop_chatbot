@@ -320,7 +320,13 @@ function renderPapaIntroSequence(rawText, imagePath, choices = []) {
 
   setTimeout(() => {
     if (promptText) {
-      appendMessage("bot", formatChoices(promptText, choices));
+      if (promptText.includes("[SPLIT]")) {
+        const parts = promptText.split("[SPLIT]");
+        appendMessage("bot", parts[0].trim());
+        appendMessage("bot", formatChoices(parts[1].trim(), choices));
+      } else {
+        appendMessage("bot", formatChoices(promptText, choices));
+      }
       playPapaSqueakSound(promptText);
     }
   }, 7500);
@@ -512,7 +518,7 @@ async function sendMessage(isInitial = false) {
     }
 
     if (!isPapaIntro && data.choices && Array.isArray(data.choices) && data.choices.length > 0) {
-      replyText += `\n  선택지: ['${data.choices.join("', '")}']`;
+      replyText = formatChoices(replyText, data.choices);
     }
 
     const beforeChapter = currentChapter;
@@ -604,13 +610,17 @@ async function sendMessage(isInitial = false) {
         updateCh1LeftImage(ch1Imgs.leftImg);
       }
     } else {
-      if (currentChapter === 3 && isPapaIntro) {
+      if (data.chapter === 3 && isPapaIntro) {
         renderPapaIntroSequence(replyText, imagePath, data.choices || []);
+      } else if (data.chapter === 3 && replyText.includes("[SPLIT]")) {
+        const parts = replyText.split("[SPLIT]");
+        appendMessage("bot", parts[0].trim(), imagePath);
+        appendMessage("bot", parts[1].trim());
       } else {
         appendMessage("bot", replyText, imagePath);
       }
 
-      if (currentChapter === 3 && !isPapaIntro) {
+      if (data.chapter === 3 && !isPapaIntro) {
         updatePapaSceneFromText(replyText);
       }
     }
