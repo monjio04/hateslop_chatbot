@@ -144,9 +144,10 @@ def fail():
         except FileNotFoundError:
             entry = {}
 
+        ch3_desc = '아빠를 제대로 되돌리는 데 실패했습니다.\n다음 날, 아빠는 또 이상한 발명을 하다 결국 집을 날려먹고 맙니다.'
         return render_template(
             'fail.html',
-            desc=entry.get('text', '해독약 조합이 맞지 않았습니다...'),
+            desc=ch3_desc,
             image=entry.get('image'),
             chapter=3,
             username=username
@@ -162,9 +163,10 @@ def fail():
     entry = bad_data.get(fail_id, bad_data.get('DEFAULT', {
         'desc': '살아남지 못했습니다...', 'image': None, 'chapter': 1
     }))
+    desc = (entry.get('desc') or '').replace('NN 오드', f'{username} 오드')
     return render_template(
         'fail.html',
-        desc=entry.get('desc'),
+        desc=desc,
         image=entry.get('image'),
         chapter=entry.get('chapter', 1),
         username=username
