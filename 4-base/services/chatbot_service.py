@@ -280,11 +280,17 @@ class ChatbotService:
                     print(f"[WARN] LLM 실패, fallback 사용: {e}")
                     reply = "음... 생각보다 괜찮게 됐구나."
 
+                next_result = self._ch2_handler(state, "")
                 return {
                     "reply": reply,
                     "step": "clear",
                     "choices": [],
-                    "image": None
+                    "image": None,
+                    "next_chapter": 2,
+                    "next_reply": next_result.get("reply", ""),
+                    "next_image": next_result.get("image"),
+                    "next_question_idx": next_result.get("question_idx"),
+                    "next_score": next_result.get("score"),
                 }
 
             else:
@@ -308,6 +314,7 @@ class ChatbotService:
                 return {
                     "reply": reply,
                     "step": "fail",
+                    "fail_id": "CH1_FAIL",
                     "choices": ["다시하기"],
                     "image": None
                 }
@@ -555,14 +562,29 @@ class ChatbotService:
         if ending.get("next_chapter"):
             state["chapter"] = 3
             state["data"] = {}
+            next_result = self._ch3_handler(state, "")
+            return {
+                "reply": f"{last_reply}\n\n{ending['text']}",
+                "image": ending.get("image"),
+                "step": "clear",
+                "score": score,
+                "next_chapter": 3,
+                "next_reply": next_result.get("reply", ""),
+                "next_image": next_result.get("image"),
+                "next_choices": next_result.get("choices", []),
+                "next_sound": next_result.get("sound"),
+                "next_used_ml": next_result.get("used_ml", 0),
+            }
         else:
             state["game_over"] = True
-
-        return {
-            "reply": f"{last_reply}\n\n{ending['text']}",
-            "image": ending.get("image"),
-            "fail_id": "CH2_FAIL" if state.get("game_over") else None,
-        }
+            fail_id = "CH2_FAIL_2" if score == 2 else "CH2_FAIL_1"
+            return {
+                "reply": f"{last_reply}\n\n{ending['text']}",
+                "image": ending.get("image"),
+                "step": "fail",
+                "score": score,
+                "fail_id": fail_id,
+            }
 
     def _ch3_handler(self, state: dict, user_message: str) -> dict:
         d = self.ch3_data
@@ -573,6 +595,7 @@ class ChatbotService:
         MOUSE_SOUNDS = d["mouse_sounds"]
         ANGRY_MSGS   = d["angry_msgs"]
         WRONG_MSGS   = d["wrong_msgs"]
+        HINT_MSGS    = d["hint_msgs"]
         dlg = d["dialogues"]
         llm = d["llm_prompts"]
 
@@ -586,6 +609,7 @@ class ChatbotService:
             "몸매_ml": 0,
             "스타일": None,
             "스타일_ml": 0,
+            "hint_mode": False,
         })
 
         step = ch3["step"]
@@ -604,6 +628,7 @@ class ChatbotService:
             return (
                 f"\"{sound}\"\n"
                 f"({msg} — {meds})\n"
+                f"[SPLIT]\n"
                 f"남은 ml: {remaining}ml"
             )
 
@@ -617,6 +642,7 @@ class ChatbotService:
                 "multi_select": False,
                 "max_select": 1,
                 "image": None,
+                "used_ml": 0,
                 "sound": "mouse_origin",
             }
 
@@ -627,13 +653,29 @@ class ChatbotService:
 
             if user_message not in CH3_MEDS[category]:
                 wrong_msg = random.choice(WRONG_MSGS[category])
+                reply_text = prompt_for(category, CH3_TOTAL - used_ml(), msg=wrong_msg)
                 return {
-                    "reply": prompt_for(category, CH3_TOTAL - used_ml(), msg=wrong_msg),
+                    "reply": reply_text,
                     "step": step,
                     "choices": CH3_MEDS[category],
                     "multi_select": False,
                     "max_select": 1,
                     "image": None,
+                    "used_ml": used_ml(),
+                    "sound": "mouse_mad",
+                }
+
+            if ch3["hint_mode"] and user_message != CH3_SUCCESS[category]:
+                hint_text = HINT_MSGS[category]
+                reply_text = f"{hint_text}\n\n" + prompt_for(category, CH3_TOTAL - used_ml())
+                return {
+                    "reply": reply_text,
+                    "step": step,
+                    "choices": CH3_MEDS[category],
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None,
+                    "used_ml": used_ml(),
                     "sound": "mouse_mad",
                 }
 
@@ -651,6 +693,7 @@ class ChatbotService:
                     "multi_select": False,
                     "max_select": 1,
                     "image": None,
+                    "used_ml": used_ml(),
                     "sound": None,
                 }
 
@@ -662,6 +705,7 @@ class ChatbotService:
                 "multi_select": False,
                 "max_select": 1,
                 "image": None,
+                "used_ml": used_ml(),
                 "sound": "mouse_origin",
             }
 
@@ -689,6 +733,7 @@ class ChatbotService:
                     "multi_select": False,
                     "max_select": 1,
                     "image": None,
+                    "used_ml": 0,
                     "sound": "mouse_mad",
                 }
 
@@ -719,28 +764,30 @@ class ChatbotService:
                 }
 
             else:
-                state["game_over"] = True
                 desc = ", ".join(
                     f"{c}:{ch3[c]}({ch3[f'{c}_ml']}ml)"
                     for c in CH3_ORDER
                 )
 
                 try:
-                    reply = self._call_llm(self._build_prompt(
+                    fail_reply = self._call_llm(self._build_prompt(
                         "papa",
                         llm["fail"],
                         {"변한_모습": desc}
                     ))
                 except Exception as e:
                     print(f"[WARN] CH3 실패 LLM 실패, fallback 사용: {e}")
-                    reply = "이게 대체 무슨 꼴이냐...!"
+                    fail_reply = "이게 대체 무슨 꼴이냐...!"
+
+                state["game_over"] = True
 
                 return {
-                    "reply": reply,
+                    "reply": fail_reply,
                     "step": "fail",
-                    "choices": ["다시하기"],
+                    "fail_id": f"CH3_{combo_key}",
+                    "choices": [],
                     "image": result_image,
-                    "sound": None
+                    "sound": None,
                 }
 
     # ------------------------------------------------------------------ public
@@ -753,14 +800,37 @@ class ChatbotService:
             state = self._get_state(session_id)
             return self._ch1_handler(state, "")
 
+        if user_message.strip().startswith("restart_"):
+            try:
+                chapter = int(user_message.strip().split("_")[1])
+            except (IndexError, ValueError):
+                chapter = 1
+            state = self._get_state(session_id)
+            state["game_over"] = False
+            state["chapter"] = chapter
+            state["data"] = {}
+            if chapter == 1:
+                result = self._ch1_handler(state, "")
+            elif chapter == 2:
+                result = self._ch2_handler(state, " ")
+            elif chapter == 3:
+                state["data"]["ch3"] = {
+                    "step": 0,
+                    "나이": None, "나이_ml": 0,
+                    "얼굴": None, "얼굴_ml": 0,
+                    "몸매": None, "몸매_ml": 0,
+                    "스타일": None, "스타일_ml": 0,
+                    "hint_mode": True,
+                }
+                result = self._ch3_handler(state, "")
+            else:
+                result = {"reply": "다시 시작합니다.", "image": None}
+            result["chapter"] = chapter
+            return result
+
         if user_message.strip() == "다시하기":
             state = self._get_state(session_id)
-            state["data"].pop("ch1", None)
-            state["data"].pop("ch2_phase", None)
-            state["data"].pop("current_q", None)
-            state["data"].pop("current_turn", None)
-            state["data"].pop("score", None)
-            state["data"].pop("ch3", None)
+            state["data"] = {}
             state["game_over"] = False
             state["chapter"] = 1
             return self._ch1_handler(state, "")
