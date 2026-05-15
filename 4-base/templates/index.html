@@ -25,7 +25,13 @@
     <audio id="bg-music" src="/static/sound/opening.mp3" loop autoplay></audio>
     <script>
       const bgMusic = document.getElementById('bg-music');
-      bgMusic.play().catch(() => {});
+
+      // 화면 어디든 클릭하면 배경음악 재생
+      document.body.addEventListener('click', () => {
+        if (bgMusic.paused) {
+          bgMusic.play().catch(e => console.log("Audio play failed:", e));
+        }
+      }, { once: true });
     </script>
 </body>
 </html>

@@ -31,14 +31,27 @@
         const video = document.getElementById('successVideo');
         const screen = document.getElementById('successScreen');
 
+        // 자동 재생 시도
+        video.play().catch(error => {
+            console.log("Autoplay blocked. Waiting for user interaction.");
+        });
+
         function showSuccess() {
             video.classList.add('hidden');
             video.pause();
             screen.classList.add('visible');
         }
 
+        // 화면 어디든 클릭하면 소리 켜기
+        document.body.addEventListener('click', () => {
+            if (video.muted) {
+                video.muted = false;
+                video.currentTime = 0; // 소리와 함께 처음부터 재생
+                video.play();
+            }
+        }, { once: true });
+
         video.addEventListener('ended', showSuccess);
-        video.addEventListener('click', showSuccess);
     </script>
 </body>
 </html>

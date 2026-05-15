@@ -490,7 +490,7 @@ class ChatbotService:
                 f"속으로는 인정하지만 절대 티는 안 낼 거야."
             )
         else:
-            found_text = "누나 말이 별로 안 와닿아. 딴 걸 물어보면서 넘기면 돼."
+            found_text = "누나 말이 별로 안 와닿아."
 
         target_id = random.choice(missing)
         target = next(e for e in ch2["elements"] if e["id"] == target_id)
