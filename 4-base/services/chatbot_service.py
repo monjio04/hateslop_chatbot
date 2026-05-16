@@ -124,8 +124,11 @@ class ChatbotService:
         CH1_HEATS    = d["heats"]
         CH1_SAUCES   = d["sauces"]
         CH1_TOPPINGS = d["toppings"]
-        CH1_SUCCESS  = {**d["success"], "ingredients": set(d["success"]["ingredients"])}
+        CH1_ROUTES = d["success_routes"]
+        for route in CH1_ROUTES:
+            route["ingredients"] = set(route["ingredients"])
         dlg = d["dialogues"]
+        hints = d.get("hints", {})
         llm = d["llm_prompts"]
 
         ch1 = state["data"].setdefault("ch1", {
@@ -151,7 +154,7 @@ class ChatbotService:
                 return {
                     "reply": dlg["step1_prompt"],
                     "step": 1,
-                    "choices": CH1_MEATS,
+                    "choices": [],
                     "multi_select": False,
                     "max_select": 1,
                     "image": None,
@@ -168,22 +171,27 @@ class ChatbotService:
 
         # Step 1: 고기 선택
         if step == 1:
-            if user_message not in CH1_MEATS:
+            found_meat = next((m for m in CH1_MEATS if m in user_message), None)
+            if not found_meat:
                 return {
                     "reply": dlg["step1_error"],
                     "step": 1,
-                    "choices": CH1_MEATS,
+                    "choices": [],
                     "multi_select": False,
                     "max_select": 1,
                     "image": None
                 }
 
-            ch1["meat"] = user_message
+            ch1["meat"] = found_meat
             ch1["step"] = 2
+            reply_text = dlg["step2_prompt"]
+            if state["data"].setdefault("ch1_gameover_count", 0) >= 2:
+                reply_text += hints.get("step2", {}).get(ch1["meat"], "")
+
             return {
-                "reply": dlg["step2_prompt"],
+                "reply": reply_text,
                 "step": 2,
-                "choices": CH1_HEATS,
+                "choices": [],
                 "multi_select": False,
                 "max_select": 1,
                 "image": None,
@@ -191,22 +199,32 @@ class ChatbotService:
 
         # Step 2: 굽기 선택
         if step == 2:
-            if user_message not in CH1_HEATS:
+            found_heat = None
+            for h in CH1_HEATS:
+                if h[:2] in user_message or h in user_message:
+                    found_heat = h
+                    break
+            
+            if not found_heat:
                 return {
                     "reply": dlg["step2_error"],
                     "step": 2,
-                    "choices": CH1_HEATS,
+                    "choices": [],
                     "multi_select": False,
                     "max_select": 1,
                     "image": None
                 }
 
-            ch1["heat"] = user_message
+            ch1["heat"] = found_heat
             ch1["step"] = 3
+            reply_text = dlg["step3_prompt"]
+            if state["data"].setdefault("ch1_gameover_count", 0) >= 2:
+                reply_text += hints.get("step3", {}).get(ch1["meat"], "")
+
             return {
-                "reply": dlg["step3_prompt"],
+                "reply": reply_text,
                 "step": 3,
-                "choices": CH1_SAUCES,
+                "choices": [],
                 "multi_select": False,
                 "max_select": 1,
                 "image": None,
@@ -214,39 +232,46 @@ class ChatbotService:
 
         # Step 3: 소스 선택
         if step == 3:
-            if user_message not in CH1_SAUCES:
+            found_sauce = next((s for s in CH1_SAUCES if s in user_message), None)
+            if not found_sauce:
                 return {
                     "reply": dlg["step3_error"],
                     "step": 3,
-                    "choices": CH1_SAUCES,
+                    "choices": [],
                     "multi_select": False,
                     "max_select": 1,
                     "image": None
                 }
 
-            ch1["sauce"] = user_message
+            ch1["sauce"] = found_sauce
             ch1["step"] = 4
+            reply_text = dlg["step4_prompt"]
+            if state["data"].setdefault("ch1_gameover_count", 0) >= 2:
+                reply_text += hints.get("step4", {}).get(ch1["meat"], "")
+
             return {
-                "reply": dlg["step4_prompt"],
+                "reply": reply_text,
                 "step": 4,
-                "choices": CH1_TOPPINGS,
+                "choices": [],
                 "multi_select": True,
-                "max_select": 3,
+                "max_select": 2,
                 "image": None,
             }
 
-        # Step 4: 재료 선택 (최대 3개)
+        # Step 4: 재료 선택 (최대 2개)
         if step == 4:
-            selected = [x for x in re.split(r"[,\s]+", user_message.strip()) if x]
-            valid = [x for x in selected if x in CH1_TOPPINGS]
+            valid = []
+            for topping in CH1_TOPPINGS:
+                if topping in user_message:
+                    valid.append(topping)
 
-            if len(valid) != 3:
+            if len(valid) != 2:
                 return {
                     "reply": dlg["step4_error"],
                     "step": 4,
-                    "choices": CH1_TOPPINGS,
+                    "choices": [],
                     "multi_select": True,
-                    "max_select": 3,
+                    "max_select": 2,
                     "image": None
                 }
 
@@ -263,12 +288,14 @@ class ChatbotService:
 
         # Step 5: 시식 — 성공/실패 판정
         if step == 5:
-            is_success = (
-                ch1["meat"] == CH1_SUCCESS["meat"] and
-                ch1["heat"] == CH1_SUCCESS["heat"] and
-                ch1["sauce"] == CH1_SUCCESS["sauce"] and
-                set(ch1["ingredients"]) == CH1_SUCCESS["ingredients"]
-            )
+            is_success = False
+            for route in CH1_ROUTES:
+                if (ch1["meat"] == route["meat"] and
+                    ch1["heat"] == route["heat"] and
+                    ch1["sauce"] == route["sauce"] and
+                    set(ch1["ingredients"]) == route["ingredients"]):
+                    is_success = True
+                    break
 
             if is_success:
                 state["cleared"].append(1)
@@ -295,6 +322,7 @@ class ChatbotService:
 
             else:
                 state["game_over"] = True
+                state["data"]["ch1_gameover_count"] = state["data"].setdefault("ch1_gameover_count", 0) + 1
 
                 try:
                     reply = self._call_llm(self._build_prompt(
@@ -796,8 +824,10 @@ class ChatbotService:
         session_id = username
 
         if user_message.strip().lower() == "init":
+            old_count = self._get_state(session_id).get("data", {}).get("ch1_gameover_count", 0)
             self._reset_state(session_id)
             state = self._get_state(session_id)
+            state["data"]["ch1_gameover_count"] = old_count
             return self._ch1_handler(state, "")
 
         if user_message.strip().startswith("restart_"):
@@ -806,9 +836,13 @@ class ChatbotService:
             except (IndexError, ValueError):
                 chapter = 1
             state = self._get_state(session_id)
+            old_count = state.get("data", {}).get("ch1_gameover_count", 0)
+            
             state["game_over"] = False
             state["chapter"] = chapter
             state["data"] = {}
+            state["data"]["ch1_gameover_count"] = old_count
+            
             if chapter == 1:
                 result = self._ch1_handler(state, "")
             elif chapter == 2:
