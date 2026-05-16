@@ -139,72 +139,126 @@ class ChatbotService:
             if not user_message:
                 return {
                     "reply": dlg["intro"],
-                    "step": 0, "choices": [], "multi_select": False, "max_select": 1, "image": None,
+                    "step": 0,
+                    "choices": [],
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None,
                 }
+
             if "도와줄게" in user_message or "도와 줄게" in user_message:
                 ch1["step"] = 1
                 return {
                     "reply": dlg["step1_prompt"],
-                    "step": 1, "choices": CH1_MEATS,
-                    "multi_select": False, "max_select": 1, "image": None,
+                    "step": 1,
+                    "choices": CH1_MEATS,
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None,
                 }
+
             return {
                 "reply": dlg["trigger_wait"],
-                "step": 0, "choices": [], "multi_select": False, "max_select": 1, "image": None,
+                "step": 0,
+                "choices": [],
+                "multi_select": False,
+                "max_select": 1,
+                "image": None,
             }
 
         # Step 1: 고기 선택
         if step == 1:
             if user_message not in CH1_MEATS:
-                return {"reply": dlg["step1_error"], "step": 1,
-                    "choices": CH1_MEATS, "multi_select": False, "max_select": 1, "image": None}
+                return {
+                    "reply": dlg["step1_error"],
+                    "step": 1,
+                    "choices": CH1_MEATS,
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None
+                }
+
             ch1["meat"] = user_message
             ch1["step"] = 2
             return {
                 "reply": dlg["step2_prompt"],
-                "step": 2, "choices": CH1_HEATS,
-                "multi_select": False, "max_select": 1, "image": None,
+                "step": 2,
+                "choices": CH1_HEATS,
+                "multi_select": False,
+                "max_select": 1,
+                "image": None,
             }
 
         # Step 2: 굽기 선택
         if step == 2:
             if user_message not in CH1_HEATS:
-                return {"reply": dlg["step2_error"], "step": 2,
-                    "choices": CH1_HEATS, "multi_select": False, "max_select": 1, "image": None}
+                return {
+                    "reply": dlg["step2_error"],
+                    "step": 2,
+                    "choices": CH1_HEATS,
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None
+                }
+
             ch1["heat"] = user_message
             ch1["step"] = 3
             return {
                 "reply": dlg["step3_prompt"],
-                "step": 3, "choices": CH1_SAUCES,
-                "multi_select": False, "max_select": 1, "image": None,
+                "step": 3,
+                "choices": CH1_SAUCES,
+                "multi_select": False,
+                "max_select": 1,
+                "image": None,
             }
 
         # Step 3: 소스 선택
         if step == 3:
             if user_message not in CH1_SAUCES:
-                return {"reply": dlg["step3_error"], "step": 3,
-                    "choices": CH1_SAUCES, "multi_select": False, "max_select": 1, "image": None}
+                return {
+                    "reply": dlg["step3_error"],
+                    "step": 3,
+                    "choices": CH1_SAUCES,
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None
+                }
+
             ch1["sauce"] = user_message
             ch1["step"] = 4
             return {
                 "reply": dlg["step4_prompt"],
-                "step": 4, "choices": CH1_TOPPINGS,
-                "multi_select": True, "max_select": 3, "image": None,
+                "step": 4,
+                "choices": CH1_TOPPINGS,
+                "multi_select": True,
+                "max_select": 3,
+                "image": None,
             }
 
         # Step 4: 재료 선택 (최대 3개)
         if step == 4:
             selected = [x for x in re.split(r"[,\s]+", user_message.strip()) if x]
             valid = [x for x in selected if x in CH1_TOPPINGS]
+
             if len(valid) != 3:
-                return {"reply": dlg["step4_error"], "step": 4,
-                    "choices": CH1_TOPPINGS, "multi_select": True, "max_select": 3, "image": None}
+                return {
+                    "reply": dlg["step4_error"],
+                    "step": 4,
+                    "choices": CH1_TOPPINGS,
+                    "multi_select": True,
+                    "max_select": 3,
+                    "image": None
+                }
+
             ch1["ingredients"] = valid
             ch1["step"] = 5
             return {
                 "reply": dlg["step5_prompt"],
-                "step": 5, "choices": ["시식하기"],
-                "multi_select": False, "max_select": 1, "image": None,
+                "step": 5,
+                "choices": ["시식하기"],
+                "multi_select": False,
+                "max_select": 1,
+                "image": None,
             }
 
         # Step 5: 시식 — 성공/실패 판정
@@ -215,14 +269,17 @@ class ChatbotService:
                 ch1["sauce"] == CH1_SUCCESS["sauce"] and
                 set(ch1["ingredients"]) == CH1_SUCCESS["ingredients"]
             )
+
             if is_success:
                 state["cleared"].append(1)
                 state["chapter"] = 2
+
                 try:
                     reply = self._call_llm(self._build_prompt("mama", llm["success"]))
                 except Exception as e:
                     print(f"[WARN] LLM 실패, fallback 사용: {e}")
                     reply = "음... 생각보다 괜찮게 됐구나."
+
                 next_result = self._ch2_handler(state, "")
                 return {
                     "reply": reply,
@@ -235,23 +292,43 @@ class ChatbotService:
                     "next_question_idx": next_result.get("question_idx"),
                     "next_score": next_result.get("score"),
                 }
+
             else:
                 state["game_over"] = True
+
                 try:
-                    reply = self._call_llm(self._build_prompt("mama", llm["fail"],
-                        {"고기": ch1["meat"], "굽기": ch1["heat"],
-                         "소스": ch1["sauce"], "재료": ch1["ingredients"]}))
+                    reply = self._call_llm(self._build_prompt(
+                        "mama",
+                        llm["fail"],
+                        {
+                            "고기": ch1["meat"],
+                            "굽기": ch1["heat"],
+                            "소스": ch1["sauce"],
+                            "재료": ch1["ingredients"]
+                        }
+                    ))
                 except Exception as e:
                     print(f"[WARN] LLM 실패, fallback 사용: {e}")
                     reply = "이상한 걸 넣은 것 같은데... 내 잘못이 아니야!"
-                return {"reply": reply, "step": "fail", "fail_id": "CH1_FAIL", "choices": ["다시하기"], "image": None}
 
+                return {
+                    "reply": reply,
+                    "step": "fail",
+                    "fail_id": "CH1_FAIL",
+                    "choices": ["다시하기"],
+                    "image": None
+                }
 
     def _ch2_handler(self, state: dict, user_message: str) -> dict:
         data = state["data"]
 
         if "ch2_phase" not in data:
-            data.update({"ch2_phase": "intro", "current_q": 0, "current_turn": 0, "score": 0})
+            data.update({
+                "ch2_phase": "intro",
+                "current_q": 0,
+                "current_turn": 0,
+                "score": 0
+            })
 
         bro = self.characters["bro"]
         ch2 = self._load_chapter_data("ch2")
@@ -259,6 +336,7 @@ class ChatbotService:
         if data["ch2_phase"] == "intro":
             data["ch2_phase"] = "question"
             first_q = ch2["questions"][0]["text"]
+
             return {
                 "reply": f"{ch2['intro']}\n\n🎯 {ch2['quest']}\n\n{first_q}",
                 "image": None,
@@ -272,10 +350,10 @@ class ChatbotService:
 
         elements_found = self._ch2_check_elements(bro, ch2, question, user_message)
         threshold = ch2["judgment_criteria"]["success_threshold"]
-        convinced = (len(elements_found) >= threshold)
+        convinced = len(elements_found) >= threshold
 
         data["current_turn"] += 1
-        last_turn = (data["current_turn"] >= max_turns)
+        last_turn = data["current_turn"] >= max_turns
 
         if convinced:
             data["score"] += 1
@@ -293,6 +371,7 @@ class ChatbotService:
                 return self._ch2_ending(state, ch2, reply)
 
             next_q = ch2["questions"][data["current_q"]]["text"]
+
             return {
                 "reply": f"{reply}\n\n{next_q}",
                 "image": None,
@@ -300,7 +379,12 @@ class ChatbotService:
                 "score": data["score"],
             }
 
-        return {"reply": reply, "image": None, "question_idx": q_idx, "score": data["score"]}
+        return {
+            "reply": reply,
+            "image": None,
+            "question_idx": q_idx,
+            "score": data["score"]
+        }
 
     def _ch2_check_elements(self, bro: dict, ch2: dict, question: dict, user_message: str) -> list:
         elements = ch2["elements"]
@@ -341,28 +425,57 @@ class ChatbotService:
     ### 설득 요소 정의
     {elements_desc}
     {example_str}
-    ### 즉시 실패 유형 (해당 시 elements_found는 무조건 빈 배열)
+
+    ### 즉시 실패 유형
+    아래 실패 유형에 해당하면 elements_found는 무조건 빈 배열이다.
     {failure_str}
 
     ### 판단 기준
-    "확신이 없으면 빈 배열을 반환하라. 관대하게 판정하지 마라.
+    - 확신이 없으면 빈 배열을 반환하라.
+    - 관대하게 판정하지 마라.
+    - 단, 직접적인 단어가 없어도 의미상 요소를 충족하면 인정한다.
 
     ### 지시
     누나의 답변에서 위 3가지 요소 중 충족된 것의 ID를 배열로 반환하라.
     즉시 실패 유형에 해당하면 빈 배열을 반환하라.
-    반드시 아래 JSON 형식으로만 응답하라 (다른 텍스트 금지):
+    반드시 아래 JSON 형식으로만 응답하라. 다른 텍스트는 절대 쓰지 마라.
+
     {{"elements_found": [충족된 요소 ID 배열, 예: [1, 2] 또는 []]}}"""
 
         try:
             raw = self._call_llm(
-                [{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}],
+                [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_message}
+                ],
                 temperature=0.3,
             )
-            result = json.loads(raw)
-            found = [e for e in result.get("elements_found", []) if e in (1, 2, 3)]
-            return found
         except Exception as e:
             print(f"[WARN] CH2 요소 판단 LLM 실패: {e}")
+            return []
+
+        try:
+            cleaned = raw.strip()
+
+            if cleaned.startswith("```"):
+                cleaned = re.sub(r"^```(?:json)?", "", cleaned, flags=re.IGNORECASE).strip()
+                cleaned = re.sub(r"```$", "", cleaned).strip()
+
+            json_match = re.search(r"\{.*\}", cleaned, flags=re.DOTALL)
+            if json_match:
+                cleaned = json_match.group(0)
+
+            result = json.loads(cleaned)
+            found = result.get("elements_found", [])
+
+            if not isinstance(found, list):
+                return []
+
+            found = [e for e in found if e in (1, 2, 3)]
+            return found
+
+        except (json.JSONDecodeError, KeyError, TypeError) as e:
+            print(f"[WARN] CH2 요소 판단 JSON 파싱 실패: {e} / raw={raw}")
             return []
 
     def _ch2_generate_nudge(self, bro: dict, ch2: dict, elements_found: list, user_message: str) -> str:
@@ -372,7 +485,11 @@ class ChatbotService:
         if not missing:
             return random.choice(ch2["reactions"]["failure"])
 
-        found_names = [e["name"] for e in ch2["elements"] if e["id"] in elements_found]
+        found_names = [
+            e["name"]
+            for e in ch2["elements"]
+            if e["id"] in elements_found
+        ]
 
         if found_names:
             found_text = (
@@ -384,7 +501,10 @@ class ChatbotService:
 
         target_id = random.choice(missing)
         target = next(e for e in ch2["elements"] if e["id"] == target_id)
-        forbidden = "\n".join(f"- \"{n}\" 또는 이와 유사한 표현" for n in target["nudges"])
+        forbidden = "\n".join(
+            f"- \"{n}\" 또는 이와 유사한 표현"
+            for n in target["nudges"]
+        )
 
         system_prompt = f"""### 너의 프로필
     이름: {bro['name']}
@@ -399,20 +519,18 @@ class ChatbotService:
     {found_text}
     아직 '{target['name']}'({target['description']})에 대한 답을 못 들어서 그게 걸려.
 
-
     ### 반응 지시
     1. 유저의 말 중 한 단어를 집어 비웃거나 반박해.
         예) 누나가 "소름끼치지 않냐"고 했으면 → "소름은 무슨..."처럼 그 단어에 반응.
         예) 누나가 "경비아저씨"를 들었으면 → "아니 경비아저씨가 거기서 왜 나와"처럼 황당해해.
-    2. 하지만 이미 유저가 상황 설명을 했다면(found_text 참고), 그 이야기는 그만하고 뻔뻔하게 다음 의문('{target['name']}')을 던져.
-    3. 예: "아니, 알바생 웃는 건 알겠는데, 내 상황은 다르다니까? (1번 반박) 근데 그 누나가 나한테만 유독 친절한 건 어떻게 설명할 건데? (2번 입장 고려 유도)"
-    4. 1~4문장 이내로 이야기해. 
+    2. 하지만 이미 유저가 상황 설명을 했다면, 그 이야기는 그만하고 뻔뻔하게 다음 의문('{target['name']}')을 던져.
+    3. 예: "아니, 알바생 웃는 건 알겠는데, 내 상황은 다르다니까? 근데 그 누나가 나한테만 유독 친절한 건 어떻게 설명할 건데?"
+    4. 1~4문장 이내로 이야기해.
 
-
-    ### 절대 금지 표현 (이 말들은 쓰지 마)
+    ### 절대 금지 표현
     {forbidden}
     - "구체적으로", "예를 들어서", "무슨 상황인데" 계열 표현 전부 금지
-    - "...아니야?" 처럼 문장 끝에 붙이는 습관적 표현 금지"""
+    - "...아니야?"처럼 문장 끝에 붙이는 습관적 표현 금지"""
 
         try:
             reply = self._call_llm(
@@ -423,9 +541,19 @@ class ChatbotService:
                 temperature=0.9,
             )
             return reply.strip()
+
         except Exception as e:
             print(f"[WARN] CH2 반응 생성 LLM 실패: {e}")
-            return random.choice(ch2["reactions"]["failure"])
+
+            fallback_replies = [
+                "아니, 그 말은 별로 안 와닿는데? 내 상황은 좀 다르다니까.",
+                "음... 뭔 말인지는 알겠는데, 그래도 난 아직 납득 안 돼.",
+                "아니, 그렇게 말한다고 내가 바로 믿을 것 같아?",
+                "그건 좀 억지 같은데. 내가 왜 그렇게 생각하면 안 되는데?",
+                "흠... 근데 그 누나가 나한테만 친절했던 건 아직 설명 안 됐잖아."
+            ]
+
+            return random.choice(fallback_replies)
 
     def _ch2_ending(self, state: dict, ch2: dict, last_reply: str) -> dict:
         score = state["data"]["score"]
@@ -449,15 +577,13 @@ class ChatbotService:
             }
         else:
             state["game_over"] = True
-            # Mapping scores to fail_ids based on bad_ending.json
-            # Score 2 is Rose (CH2_FAIL_2), Score 1/0 is Candle (CH2_FAIL_1)
             fail_id = "CH2_FAIL_2" if score == 2 else "CH2_FAIL_1"
             return {
                 "reply": f"{last_reply}\n\n{ending['text']}",
                 "image": ending.get("image"),
                 "step": "fail",
                 "score": score,
-                "fail_id": fail_id
+                "fail_id": fail_id,
             }
 
     def _ch3_handler(self, state: dict, user_message: str) -> dict:
@@ -469,16 +595,23 @@ class ChatbotService:
         MOUSE_SOUNDS = d["mouse_sounds"]
         ANGRY_MSGS   = d["angry_msgs"]
         WRONG_MSGS   = d["wrong_msgs"]
+        HINT_MSGS    = d["hint_msgs"]
         dlg = d["dialogues"]
         llm = d["llm_prompts"]
 
         ch3 = state["data"].setdefault("ch3", {
             "step": 0,
-            "나이": None, "나이_ml": 0,
-            "얼굴": None, "얼굴_ml": 0,
-            "몸매": None, "몸매_ml": 0,
-            "스타일": None, "스타일_ml": 0,
+            "나이": None,
+            "나이_ml": 0,
+            "얼굴": None,
+            "얼굴_ml": 0,
+            "몸매": None,
+            "몸매_ml": 0,
+            "스타일": None,
+            "스타일_ml": 0,
+            "hint_mode": False,
         })
+
         step = ch3["step"]
         ML_BY_POS = [10, 20, 30, 40]
 
@@ -489,7 +622,9 @@ class ChatbotService:
             sound = MOUSE_SOUNDS[category]
             if msg is None:
                 msg = ANGRY_MSGS[category]
+
             meds = ", ".join(CH3_MEDS[category])
+
             return (
                 f"\"{sound}\"\n"
                 f"({msg} — {meds})\n"
@@ -502,23 +637,44 @@ class ChatbotService:
             ch3["step"] = 1
             return {
                 "reply": dlg["intro"] + prompt_for("나이", 100),
-                "step": 1, "choices": CH3_MEDS["나이"],
-                "multi_select": False, "max_select": 1, "image": None,
+                "step": 1,
+                "choices": CH3_MEDS["나이"],
+                "multi_select": False,
+                "max_select": 1,
+                "image": None,
                 "used_ml": 0,
                 "sound": "mouse_origin",
             }
 
-        # Steps 1~4: 각 카테고리 약 선택 (ml 자동 결정)
+        # Steps 1~4: 각 카테고리 약 선택
         if 1 <= step <= 4:
             cat_idx = step - 1
             category = CH3_ORDER[cat_idx]
 
             if user_message not in CH3_MEDS[category]:
                 wrong_msg = random.choice(WRONG_MSGS[category])
+                reply_text = prompt_for(category, CH3_TOTAL - used_ml(), msg=wrong_msg)
                 return {
-                    "reply": prompt_for(category, CH3_TOTAL - used_ml(), msg=wrong_msg),
-                    "step": step, "choices": CH3_MEDS[category],
-                    "multi_select": False, "max_select": 1, "image": None,
+                    "reply": reply_text,
+                    "step": step,
+                    "choices": CH3_MEDS[category],
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None,
+                    "used_ml": used_ml(),
+                    "sound": "mouse_mad",
+                }
+
+            if ch3["hint_mode"] and user_message != CH3_SUCCESS[category]:
+                hint_text = HINT_MSGS[category]
+                reply_text = f"{hint_text}\n\n" + prompt_for(category, CH3_TOTAL - used_ml())
+                return {
+                    "reply": reply_text,
+                    "step": step,
+                    "choices": CH3_MEDS[category],
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None,
                     "used_ml": used_ml(),
                     "sound": "mouse_mad",
                 }
@@ -529,41 +685,54 @@ class ChatbotService:
             ch3["step"] = step + 1
             remaining = CH3_TOTAL - used_ml()
 
-            if step == 4:  # 스타일까지 완료 → 먹이기
+            if step == 4:
                 return {
                     "reply": dlg["complete"].format(total=used_ml()),
-                    "step": 5, "choices": ["먹이기"],
-                    "multi_select": False, "max_select": 1, "image": None,
+                    "step": 5,
+                    "choices": ["먹이기"],
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None,
                     "used_ml": used_ml(),
                     "sound": None,
                 }
-            else:
-                next_cat = CH3_ORDER[step]
-                return {
-                    "reply": prompt_for(next_cat, remaining),
-                    "step": step + 1, "choices": CH3_MEDS[next_cat],
-                    "multi_select": False, "max_select": 1, "image": None,
-                    "used_ml": used_ml(),
-                    "sound": "mouse_origin",
-                }
+
+            next_cat = CH3_ORDER[step]
+            return {
+                "reply": prompt_for(next_cat, remaining),
+                "step": step + 1,
+                "choices": CH3_MEDS[next_cat],
+                "multi_select": False,
+                "max_select": 1,
+                "image": None,
+                "used_ml": used_ml(),
+                "sound": "mouse_origin",
+            }
 
         # Step 5: 먹이기 → 용량 체크 → 성공/실패 판정
         if step == 5:
             total = used_ml()
 
             if total != CH3_TOTAL:
-                # 용량 불일치 → 처음부터 다시
                 state["data"]["ch3"] = {
                     "step": 1,
-                    "나이": None, "나이_ml": 0,
-                    "얼굴": None, "얼굴_ml": 0,
-                    "몸매": None, "몸매_ml": 0,
-                    "스타일": None, "스타일_ml": 0,
+                    "나이": None,
+                    "나이_ml": 0,
+                    "얼굴": None,
+                    "얼굴_ml": 0,
+                    "몸매": None,
+                    "몸매_ml": 0,
+                    "스타일": None,
+                    "스타일_ml": 0,
                 }
+
                 return {
                     "reply": dlg["ml_mismatch"].format(total=total) + prompt_for("나이", 100),
-                    "step": 1, "choices": CH3_MEDS["나이"],
-                    "multi_select": False, "max_select": 1, "image": None,
+                    "step": 1,
+                    "choices": CH3_MEDS["나이"],
+                    "multi_select": False,
+                    "max_select": 1,
+                    "image": None,
                     "used_ml": 0,
                     "sound": "mouse_mad",
                 }
@@ -571,30 +740,55 @@ class ChatbotService:
             combo_key = "_".join(ch3[cat] for cat in CH3_ORDER)
             result_image = self.ch3_results.get(combo_key, {}).get("image", None)
 
-            correct = all(ch3[cat] == CH3_SUCCESS[cat] for cat in CH3_ORDER)
+            correct = all(
+                ch3[cat] == CH3_SUCCESS[cat]
+                for cat in CH3_ORDER
+            )
+
             if correct:
                 state["cleared"].append(3)
                 state["chapter"] = 4
+
                 try:
                     reply = self._call_llm(self._build_prompt("papa", llm["success"]))
                 except Exception as e:
-                    print(f"[WARN] LLM 실패, fallback 사용: {e}")
-                    reply = "찍찍... 아, 아니 이게 무슨... 나 돌아왔어!?"
+                    print(f"[WARN] CH3 성공 LLM 실패, fallback 사용: {e}")
+                    reply = "흠... 이 정도면 봐줄 만하군."
+
                 return {
                     "reply": reply,
                     "step": "clear",
                     "choices": [],
                     "image": result_image,
+                    "sound": None
+                }
+
+            else:
+                desc = ", ".join(
+                    f"{c}:{ch3[c]}({ch3[f'{c}_ml']}ml)"
+                    for c in CH3_ORDER
+                )
+
+                try:
+                    fail_reply = self._call_llm(self._build_prompt(
+                        "papa",
+                        llm["fail"],
+                        {"변한_모습": desc}
+                    ))
+                except Exception as e:
+                    print(f"[WARN] CH3 실패 LLM 실패, fallback 사용: {e}")
+                    fail_reply = "이게 대체 무슨 꼴이냐...!"
+
+                state["game_over"] = True
+
+                return {
+                    "reply": fail_reply,
+                    "step": "fail",
+                    "fail_id": f"CH3_{combo_key}",
+                    "choices": [],
+                    "image": result_image,
                     "sound": None,
                 }
-            else:
-                state["game_over"] = True
-                desc = ", ".join(
-                    f"{c}:{ch3[c]}({ch3[f'{c}_ml']}ml)" for c in CH3_ORDER
-                )
-                reply = self._call_llm(self._build_prompt("papa", llm["fail"],
-                    {"변한_모습": desc}))
-                return {"reply": reply, "step": "fail", "fail_id": f"CH3_{combo_key}", "choices": ["다시하기"], "image": result_image, "sound": None}
 
     # ------------------------------------------------------------------ public
 
@@ -606,7 +800,6 @@ class ChatbotService:
             state = self._get_state(session_id)
             return self._ch1_handler(state, "")
 
-        # 챕터별 재시작: restart_1, restart_2, restart_3
         if user_message.strip().startswith("restart_"):
             try:
                 chapter = int(user_message.strip().split("_")[1])
@@ -621,6 +814,14 @@ class ChatbotService:
             elif chapter == 2:
                 result = self._ch2_handler(state, " ")
             elif chapter == 3:
+                state["data"]["ch3"] = {
+                    "step": 0,
+                    "나이": None, "나이_ml": 0,
+                    "얼굴": None, "얼굴_ml": 0,
+                    "몸매": None, "몸매_ml": 0,
+                    "스타일": None, "스타일_ml": 0,
+                    "hint_mode": True,
+                }
                 result = self._ch3_handler(state, "")
             else:
                 result = {"reply": "다시 시작합니다.", "image": None}
@@ -629,7 +830,7 @@ class ChatbotService:
 
         if user_message.strip() == "다시하기":
             state = self._get_state(session_id)
-            state["data"].pop("ch1", None)
+            state["data"] = {}
             state["game_over"] = False
             state["chapter"] = 1
             return self._ch1_handler(state, "")
@@ -663,7 +864,10 @@ class ChatbotService:
 
         except Exception as e:
             print(f"[ERROR] 응답 생성 실패: {e}")
-            return {"reply": "오류가 발생했어. 다시 시도해줘.", "image": None}
+            return {
+                "reply": "오류가 발생했어. 다시 시도해줘.",
+                "image": None
+            }
 
 
 # --------------------------------------------------------------------------
@@ -691,6 +895,7 @@ if __name__ == "__main__":
     ch = input("챕터 번호 > ").strip()
 
     state = service._get_state(username)
+
     if ch == "3":
         state["chapter"] = 3
         res = service._ch3_handler(state, "")
@@ -704,6 +909,7 @@ if __name__ == "__main__":
         speaker = "엄마"
 
     print(f"\n[{speaker}] {res['reply']}")
+
     if res.get("choices"):
         print(f"  선택지: {res['choices']}")
 
@@ -715,13 +921,16 @@ if __name__ == "__main__":
             break
 
         res = service.generate_response(user_input, username)
+
         print(f"\n[캐릭터] {res['reply']}")
+
         if res.get("choices"):
             print(f"  선택지: {res['choices']}")
+
         if res.get("step") in ("clear", "fail"):
             break
 
-    # CH2 직접 진입
+    # CH2 직접 진입 테스트
     state = service._get_state("테스터")
     state["chapter"] = 2
 
@@ -729,7 +938,9 @@ if __name__ == "__main__":
         msg = input("\nYou: ")
         if msg == "q":
             break
+
         result = service.generate_response(msg, "테스터")
         print(f"\nBot: {result['reply']}")
+
         if result.get("image"):
             print(f"[이미지: {result['image']}]")
